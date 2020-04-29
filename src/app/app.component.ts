@@ -1,10 +1,18 @@
-import { Component } from '@angular/core';
+import {AfterViewInit, Component, Injector, ViewContainerRef} from "@angular/core";
+import {NgxMatFloatingAppComponent} from "../../projects/ngx-mat-floating/src/lib/ngx-mat-floating-app-component";
 
 @Component({
-  selector: 'NgxFloatingLibrary-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+    selector: "NgxMatFloatingLibrary-root",
+    templateUrl: "./app.component.html",
+    styleUrls: ["./app.component.css"]
 })
-export class AppComponent {
-  title = 'ngx-floating';
+export class AppComponent extends NgxMatFloatingAppComponent implements AfterViewInit {
+    title = "ngx-mat-floating";
+
+    constructor() {
+        super();
+    }
+
+    ngAfterViewInit(): void {
+    }
 }

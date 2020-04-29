@@ -1,0 +1,17 @@
+{
+  "extends": "../../tslint.json",
+  "rules": {
+    "directive-selector": [
+      true,
+      "attribute",
+      "NgxMatFloating",
+      "camelCase"
+    ],
+    "component-selector": [
+      true,
+      "element",
+      "ngx-mat-floating",
+      "kebab-case"
+    ]
+  }
+}

@@ -16,16 +16,16 @@ describe('AppComponent', () => {
     expect(app).toBeTruthy();
   });
 
-  it(`should have as title 'ngx-floating'`, () => {
+  it(`should have as title 'ngx-mat-floating'`, () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
-    expect(app.title).toEqual('ngx-floating');
+    expect(app.title).toEqual('ngx-mat-floating');
   });
 
   it('should render title', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement;
-    expect(compiled.querySelector('.content span').textContent).toContain('ngx-floating app is running!');
+    expect(compiled.querySelector('.content span').textContent).toContain('ngx-mat-floating app is running!');
   });
 });

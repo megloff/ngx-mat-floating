@@ -1,0 +1,43 @@
+.ngx-mat-floating-component-container {
+    position: fixed;
+    background-color: white;
+    opacity: 1;
+    border: 1px solid black;
+    -moz-transition: transform  0.3s ease-in-out;
+    -ms-transition: transform  0.3s ease-in-out;
+    -o-transition: transform  0.3s ease-in-out;
+    -webkit-transition: transform  0.3s ease-in-out;
+    transition: transform  0.3s ease-in-out;
+}
+
+.ngx-mat-floating-component-container.ngx-mat-floating-component-dragging {
+    -moz-transition: none;
+    -ms-transition: none;
+    -o-transition: none;
+    -webkit-transition: none;
+    transition: none;
+}
+
+.ngx-mat-floating-component-container .ngx-mat-floating-component-title {
+    cursor: pointer;
+}
+
+.ngx-mat-floating-component-hidden {
+    visibility: collapse;
+}
+
+/** these styles are used globally throughout ngx-mat-floating and not just by this component */
+::ng-deep .ngx-mat-floating-transition {
+    -moz-transition: max-height 0.3s ease-in-out;
+    -ms-transition: max-height  0.3s ease-in-out;
+    -o-transition: max-height  0.3s ease-in-out;
+    -webkit-transition: max-height  0.3s ease-in-out;
+    transition: max-height  0.3s ease-in-out;
+    overflow: hidden;
+    border: 0 !important;
+}
+
+::ng-deep .ngx-mat-floating-unpinned {
+    max-height: 0 !important;
+    border: 0 !important;
+}

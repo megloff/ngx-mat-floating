@@ -1,0 +1,30 @@
+.floating-element-title {
+    background-color: #1976d2;
+    color: white;
+    font-weight: 600;
+    height: 32px;
+    align-items: center;
+}
+
+.floating-element-title h2 {
+    margin: 0;
+    padding-top: 6px;
+    padding-left: 6px;
+}
+
+.floating-element-title NgxMatFloatingPin {
+    margin-top: 6px;
+}
+
+.floating-element {
+    margin: 12px 0;
+    border: 1px solid #125699;
+}
+
+.floating-element-content {
+    padding: 6px;
+}
+
+::ng-deep .wrapper-content {
+    max-width: 960px;
+}

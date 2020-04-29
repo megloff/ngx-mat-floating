@@ -6,6 +6,6 @@ export class AppPage {
   }
 
   getTitleText(): Promise<string> {
-    return element(by.css('NgxFloatingLibrary-root .content span')).getText() as Promise<string>;
+    return element(by.css('NgxMatFloatingLibrary-root .content span')).getText() as Promise<string>;
   }
 }

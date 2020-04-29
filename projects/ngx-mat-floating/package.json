@@ -1,0 +1,12 @@
+{
+  "name": "ngx-mat-floating",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/common": "^9.1.3",
+    "@angular/core": "^9.1.3",
+    "@angular/material": "^9.2.1",
+    "@angular/cdk": "@9.2.1",
+    "tslib": "^1.10.0"
+  },
+  "dependencies": {}
+}
