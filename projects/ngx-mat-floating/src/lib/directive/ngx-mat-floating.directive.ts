@@ -1,12 +1,14 @@
-import {AfterViewInit, ComponentFactoryResolver, Directive, ElementRef, EventEmitter, Input, OnInit, Output} from "@angular/core";
+import {AfterViewInit, ComponentFactoryResolver, Directive, ElementRef, EventEmitter, Input, OnInit, Output, ViewContainerRef} from "@angular/core";
 
-import {NgxMatFloatingWrapperComponent, NgxMatFloatingWrapperStatus, RelativeReference} from "../ngx-mat-floating-wrapper/ngx-mat-floating-wrapper.component";
+import {NgxMatFloatingWrapperComponent, NgxMatFloatingWrapperStatus, NgxMatFloatingFirstPosition} from "../ngx-mat-floating-wrapper/ngx-mat-floating-wrapper.component";
 import {NgxMatFloatingPinComponent} from "../ngx-mat-floating-pin/ngx-mat-floating-pin.component";
 import {NgxMatFloatingService} from "../ngx-mat-floating.service";
+import {Point} from "@angular/cdk/drag-drop/drag-ref";
 
 export interface NxgMatFloatingStatusChangeEvent {
     type: NgxMatFloatingWrapperStatus;
     component: NgxMatFloatingDirective;
+    position: Point;
 }
 
 @Directive({
@@ -14,8 +16,9 @@ export interface NxgMatFloatingStatusChangeEvent {
 })
 export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
     @Input("floatingWidth") floatingComponentWidth: string;
-    @Input("relativeTo") floatingComponentRelative: RelativeReference = RelativeReference.origin;
+    @Input("firstPosition") firstPosition: NgxMatFloatingFirstPosition | Point = NgxMatFloatingFirstPosition.Centered;
     @Input("wrapperClass") wrapperClass: string;
+    @Input("originActivationFlash") originActivationFlash: boolean | string | number;
 
     @Output() stateChange: EventEmitter<NxgMatFloatingStatusChangeEvent> = new EventEmitter();
 
@@ -49,12 +52,14 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
 
         this.floatingElementMaxHeight = this.floatingElement.style.maxHeight;
         this.floatingElement.style.maxHeight = this.floatingElement.clientHeight + "px";
+        this.floatingElement.classList.add("ngx-mat-floating-placeholder");
 
         this.floatingViewInstance.changeToUnpinned({
             titleElement: this.headerTitleElement,
             contentContainerElement: this.contentContainerElement,
             width: this.floatingComponentWidth,
-            relativeReference: this.floatingComponentRelative
+            firstPosition: this.firstPosition,
+            originActivationFlash: this.service.getBooleanValue(this.originActivationFlash, true)
         });
     }
 
@@ -83,7 +88,7 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
         this.contentContainerElement = this.floatingElement.querySelector("[ngxMatFloatingContent]");
 
         if (!this.contentContainerElement) {
-            console.warn("you must mark your content element with ngxMatFloatingContent")
+            console.warn("you must mark your content element with ngxMatFloatingContent");
         }
     }
 
@@ -93,6 +98,7 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
                 this.floatingElement.classList.remove("ngx-mat-floating-transition");
                 if (this.floatingViewInstance.isPinned()) {
                     this.floatingElement.style.maxHeight = this.floatingElementMaxHeight;
+                    this.floatingElement.classList.remove("ngx-mat-floating-placeholder");
                 }
             }
         });
@@ -103,7 +109,7 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
     }
 
     private insertFloatingWrapper(pollingTimeout: number) {
-        let pollRetryTime = 10; // retry every 10ms
+        const pollRetryTime = 10; // retry every 10ms
 
         // the root view might not be present yet when we're initializing -> try again a few ticks later
         const rootContainerViewRef = this.service.getRootViewContainerRef();
@@ -133,14 +139,20 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
                         break;
 
                     case NgxMatFloatingWrapperStatus.Pinned:
-                        this.floatingElement.classList.add("ngx-mat-floating-transition");
+                        if (this.floatingViewInstance.hasMoved()) {
+                            this.floatingElement.classList.add("ngx-mat-floating-transition");
+                        } else {
+                            this.floatingElement.style.maxHeight = this.floatingElementMaxHeight;
+                            this.floatingElement.classList.remove("ngx-mat-floating-placeholder");
+                        }
                         this.floatingElement.classList.remove("ngx-mat-floating-unpinned");
                         break;
                 }
 
                 this.stateChange.emit({
                     type: status,
-                    component: this
+                    component: this,
+                    position: this.floatingViewInstance.getPosition()
                 });
             });
         } else {

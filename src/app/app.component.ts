@@ -13,6 +13,10 @@ export class AppComponent extends NgxMatFloatingAppComponent implements AfterVie
         super();
     }
 
+    public stateChangeLogger(ev) {
+        console.log(ev);
+    }
+
     ngAfterViewInit(): void {
     }
 }

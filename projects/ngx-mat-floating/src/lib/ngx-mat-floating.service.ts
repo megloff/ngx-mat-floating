@@ -22,4 +22,15 @@ export class NgxMatFloatingService {
     public getRootViewContainerRef(): ViewContainerRef {
         return this.rootViewContainerRef;
     }
+
+    public getBooleanValue(value: boolean | string | number, defaultValue?: boolean): boolean {
+        if (value === "" || value === undefined) {
+            value = !!defaultValue;
+        } else if (typeof value == "string") {
+            value = value.toLowerCase();
+            value = value != "false" && value != "no" && value != "0";
+        }
+
+        return !!value;
+    }
 }

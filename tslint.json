@@ -5,7 +5,6 @@
             true,
             "never-prefix"
         ],
-        "no-string-throw": false,
         "max-line-length": [
             false,
             210
@@ -25,10 +24,13 @@
         ],
         "no-floating-promises": true,
         "no-misused-promises": true,
+        "no-string-throw": false,
         "object-literal-key-quotes": false,
         "object-literal-shorthand": false,
         "object-literal-sort-keys": false,
         "ordered-imports": false,
+        "prefer-const": true,
+        "semicolon": true,
         "quotemark": [
             true,
             "double"

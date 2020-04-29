@@ -1,4 +1,4 @@
-import {Component, ElementRef, Input, OnInit, ViewChild, ViewChildren} from "@angular/core";
+import {Component, ElementRef, Input, OnInit, ViewChild} from "@angular/core";
 import {NgxMatFloatingDirective} from "../directive/ngx-mat-floating.directive";
 import {NgxMatFloatingService} from "../ngx-mat-floating.service";
 
@@ -15,7 +15,7 @@ export class NgxMatFloatingPinComponent implements OnInit {
 
     @Input("forFloatingElement") public floatingElement: ElementRef<HTMLElement>;
 
-    @Input() public disabled: boolean | string = false;
+    @Input() public disabled: boolean | string | number = false;
     @Input() public color: string = "#00000";
 
     private floatingDirective: NgxMatFloatingDirective;
@@ -26,18 +26,14 @@ export class NgxMatFloatingPinComponent implements OnInit {
     public getButtonClass(): string {
         let classNames = "ngx-mat-floating-pin-button";
 
-        if (typeof this.disabled == "string") {
-            const disabled = this.disabled.toLowerCase();
-            this.disabled = disabled != "false" && disabled != "no";
-        }
-
-        if (this.disabled) {
+        if (this.service.getBooleanValue(this.disabled)) {
             classNames += " ngx-mat-floating-pin-disabled";
         }
 
         return classNames;
     }
 
+    // noinspection JSUnusedGlobalSymbols
     public setDisabled(disabled: boolean) {
         this.disabled = disabled;
     }
@@ -49,7 +45,7 @@ export class NgxMatFloatingPinComponent implements OnInit {
     public onClick(ev: MouseEvent) {
         if (!this.disabled) {
             if (this.pinned) {
-                this.unpinElement(ev)
+                this.unpinElement(ev);
             } else {
                 this.pinElement(ev);
             }
@@ -57,11 +53,11 @@ export class NgxMatFloatingPinComponent implements OnInit {
     }
 
     public pinElement(ev: MouseEvent) {
-        this.floatingDirective.pinElement(ev)
+        this.floatingDirective.pinElement(ev);
     }
 
     public unpinElement(ev: MouseEvent) {
-        this.floatingDirective.unpinElement(ev)
+        this.floatingDirective.unpinElement(ev);
     }
 
     ngOnInit(): void {

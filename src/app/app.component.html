@@ -101,7 +101,7 @@
         </div>
     </div>
 
-    <div #NextSteps ngxMatFloating class="floating-element" wrapperClass="wrapper-content">
+    <div #NextSteps ngxMatFloating class="floating-element" wrapperClass="wrapper-content" firstPosition="origin">
         <div class="floating-element-title" ngxMatFloatingTitle>
             <div style="float: right; padding-right: 6px;">
                 <ngxMatFloatingPin [forFloatingElement]="NextSteps" color="white"></ngxMatFloatingPin>
@@ -165,7 +165,7 @@
         </div>
     </div>
 
-    <div #TheCommand ngxMatFloating class="floating-element">
+    <div #TheCommand ngxMatFloating class="floating-element" [firstPosition]="{x:0, y:0}" (stateChange)="stateChangeLogger($event)">
         <div class="floating-element-title" ngxMatFloatingTitle>
             <div style="float: right; padding-right: 6px;">
                 <ngxMatFloatingPin [forFloatingElement]="TheCommand" color="white"></ngxMatFloatingPin>

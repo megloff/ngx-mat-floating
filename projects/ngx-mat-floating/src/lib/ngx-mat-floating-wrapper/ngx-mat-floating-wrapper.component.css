@@ -3,11 +3,11 @@
     background-color: white;
     opacity: 1;
     border: 1px solid black;
-    -moz-transition: transform  0.3s ease-in-out;
-    -ms-transition: transform  0.3s ease-in-out;
-    -o-transition: transform  0.3s ease-in-out;
-    -webkit-transition: transform  0.3s ease-in-out;
-    transition: transform  0.3s ease-in-out;
+    -moz-transition: transform 0.3s ease-in-out;
+    -ms-transition: transform 0.3s ease-in-out;
+    -o-transition: transform 0.3s ease-in-out;
+    -webkit-transition: transform 0.3s ease-in-out;
+    transition: transform 0.3s ease-in-out;
 }
 
 .ngx-mat-floating-component-container.ngx-mat-floating-component-dragging {
@@ -26,13 +26,30 @@
     visibility: collapse;
 }
 
+.ngx-mat-floating-component-container.ngx-mat-floating-component-glow {
+    animation-name: glow;
+    animation-duration: 0.09s;
+    animation-iteration-count: 4;
+    animation-direction: alternate;
+    animation-timing-function: ease;
+}
+
+@keyframes glow {
+    from {
+        box-shadow: 0 0 5px -5px sandybrown;
+    }
+    to {
+        box-shadow: 0 0 5px 5px sandybrown;
+    }
+}
+
 /** these styles are used globally throughout ngx-mat-floating and not just by this component */
 ::ng-deep .ngx-mat-floating-transition {
     -moz-transition: max-height 0.3s ease-in-out;
-    -ms-transition: max-height  0.3s ease-in-out;
-    -o-transition: max-height  0.3s ease-in-out;
-    -webkit-transition: max-height  0.3s ease-in-out;
-    transition: max-height  0.3s ease-in-out;
+    -ms-transition: max-height 0.3s ease-in-out;
+    -o-transition: max-height 0.3s ease-in-out;
+    -webkit-transition: max-height 0.3s ease-in-out;
+    transition: max-height 0.3s ease-in-out;
     overflow: hidden;
     border: 0 !important;
 }
@@ -40,4 +57,9 @@
 ::ng-deep .ngx-mat-floating-unpinned {
     max-height: 0 !important;
     border: 0 !important;
+}
+
+::ng-deep .ngx-mat-floating-placeholder {
+    background-color: transparent !important;
+    border-color: transparent !important;
 }
