@@ -1,7 +1,7 @@
 import {ApplicationRef, Injectable, Injector, ViewContainerRef} from "@angular/core";
 
 export let NgxMatFloatingInjector: Injector;
-export let NgxMatApplicationRef: ApplicationRef;
+export let NgxMatFloatingApplicationRef: ApplicationRef;
 
 @Injectable({
     providedIn: "root"
@@ -11,7 +11,7 @@ export class NgxMatFloatingService {
     private readonly transitionEndEvenName: string;
 
     constructor(private injector: Injector, public applicationRef: ApplicationRef) {
-        NgxMatApplicationRef = applicationRef;
+        NgxMatFloatingApplicationRef = applicationRef;
         NgxMatFloatingInjector = injector;
     }
 

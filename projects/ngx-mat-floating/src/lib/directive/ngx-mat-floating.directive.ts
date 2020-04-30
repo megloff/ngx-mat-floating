@@ -1,14 +1,19 @@
 import {AfterViewInit, ComponentFactoryResolver, Directive, ElementRef, EventEmitter, Input, OnInit, Output} from "@angular/core";
 
-import {NgxMatFloatingWrapperComponent, NgxMatFloatingWrapperStatus, NgxMatFloatingFirstPosition, NgxMatFloatingActivationAnimation} from "../ngx-mat-floating-wrapper/ngx-mat-floating-wrapper.component";
-import {NgxMatFloatingPinComponent} from "../ngx-mat-floating-pin/ngx-mat-floating-pin.component";
 import {NgxMatFloatingService} from "../ngx-mat-floating.service";
-import {Point} from "@angular/cdk/drag-drop/drag-ref";
+import {NgxMatFloatingPinComponent} from "../ngx-mat-floating-pin/ngx-mat-floating-pin.component";
+import {
+    NgxMatFloatingWrapperComponent,
+    NgxMatFloatingWrapperStatus,
+    NgxMatFloatingFirstPosition,
+    NgxMatFloatingActivationAnimation,
+    NgxMatFloatingPoint
+} from "../ngx-mat-floating-wrapper/ngx-mat-floating-wrapper.component";
 
 export interface NxgMatFloatingStatusChangeEvent {
     type: NgxMatFloatingWrapperStatus;
     component: NgxMatFloatingDirective;
-    position: Point;
+    position: NgxMatFloatingPoint;
 }
 
 @Directive({
@@ -18,7 +23,7 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
     @Output() stateChange: EventEmitter<NxgMatFloatingStatusChangeEvent> = new EventEmitter();
 
     @Input("floatingWidth") private floatingComponentWidth: string;
-    @Input("firstPosition") private firstPosition: NgxMatFloatingFirstPosition | Point = NgxMatFloatingFirstPosition.Centered;
+    @Input("firstPosition") private firstPosition: NgxMatFloatingFirstPosition | NgxMatFloatingPoint = NgxMatFloatingFirstPosition.Centered;
     @Input("wrapperClass") private wrapperClass: string;
     @Input("activationAnimation") private activationAnimation: boolean | string | NgxMatFloatingActivationAnimation = {active: true};
     @Input("rememberPosition") private rememberPosition: boolean = true;
@@ -89,6 +94,7 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
         }
     }
 
+    // noinspection JSUnusedGlobalSymbols
     public isPinned(): boolean {
         return this.pinned;
     }
@@ -101,6 +107,7 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
         }
     }
 
+    // noinspection JSUnusedGlobalSymbols
     public setPinned(pinned, ev?: MouseEvent) {
         if (pinned) {
             this.pinElement(ev);
@@ -154,6 +161,7 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
         NgxMatFloatingDirective.registerPinButton(this, pinButton);
     }
 
+    // noinspection JSUnusedGlobalSymbols
     public unregisterPinButton(pinButton: NgxMatFloatingPinComponent | HTMLButtonElement) {
         NgxMatFloatingDirective.unregisterPinButton(this, pinButton);
     }
@@ -193,7 +201,7 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
             }
         });
 
-        // 30 ms of polling is enough, because once NgxMatAppServices is available, it should initialize the
+        // 30 ms of polling is enough, because once NgxMatFloatingAppServices is available, it should initialize the
         // root view container reference within the next 10ms.
         this.insertFloatingWrapper(30);
     }

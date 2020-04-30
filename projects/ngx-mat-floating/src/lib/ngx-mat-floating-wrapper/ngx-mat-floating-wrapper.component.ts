@@ -1,8 +1,11 @@
 import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, EventEmitter, NgZone, OnDestroy, OnInit, ViewChild} from "@angular/core";
 import {fromEvent, of, Subject} from "rxjs";
-import {Point} from "@angular/cdk/drag-drop/drag-ref";
 import {map, switchMap, takeUntil} from "rxjs/operators";
-import {NgxMatFloatingService} from "../ngx-mat-floating.service";
+
+export interface NgxMatFloatingPoint {
+    x: number;
+    y: number;
+}
 
 export enum NgxMatFloatingWrapperStatus {
     Ready, Pinned, Unpinned, InitialPosition, DragStart, Dragging, DragEnd, Destroyed
@@ -22,7 +25,7 @@ export interface NgxMatFloatingActivationAnimation {
 
 export interface NgxMatFloatingContainerOptions {
     contentContainerElement: HTMLElement;
-    firstPosition?: NgxMatFloatingFirstPosition | Point;
+    firstPosition?: NgxMatFloatingFirstPosition | NgxMatFloatingPoint;
     titleElement?: HTMLElement;
     width?: string | number;
     activationAnimation?: NgxMatFloatingActivationAnimation;
@@ -51,17 +54,18 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
     private contentParentElement: HTMLElement;
     private zIndex: number;
 
-    private parentElementMarginOffset: Point;
-    private relativePosition: Point;
-    private parentElementPosition: Point;
+    private parentElementMarginOffset: NgxMatFloatingPoint;
+    private relativePosition: NgxMatFloatingPoint;
+    private parentElementPosition: NgxMatFloatingPoint;
 
     private resized: boolean = false;
     private delta = {x: 0, y: 0};
     private destroySubject: Subject<void> = new Subject<void>();
 
     private allowResize: boolean = true;
+    private floatingContainerHasMoved: boolean = false;
 
-    constructor(private zone: NgZone, private changeDetector: ChangeDetectorRef, private service: NgxMatFloatingService) {
+    constructor(private zone: NgZone, private changeDetector: ChangeDetectorRef) {
         this.zIndex = 900 + NgxMatFloatingWrapperComponent.floatingComponents.length;
         NgxMatFloatingWrapperComponent.floatingComponents.push(this);
     }
@@ -121,14 +125,12 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
                 y: parseInt(styles.marginTop, 10)
             };
 
-            let firstUnpin: boolean = false;
-
-            let firstPositionPoint: Point;
+            let firstPositionPoint: NgxMatFloatingPoint;
             let firstPosition: NgxMatFloatingFirstPosition;
 
             if (this.options.firstPosition) {
                 if (this.options.firstPosition.hasOwnProperty("x") && this.options.firstPosition.hasOwnProperty("y")) {
-                    firstPositionPoint = this.options.firstPosition as Point;
+                    firstPositionPoint = this.options.firstPosition as NgxMatFloatingPoint;
                 } else {
                     // make sure the passed argument is in correct case
                     firstPosition = (this.options.firstPosition as NgxMatFloatingFirstPosition).toLowerCase() as NgxMatFloatingFirstPosition;
@@ -143,7 +145,7 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
                         y: firstPositionPoint.y - parentElementPosition.y,
                         x: firstPositionPoint.x - parentElementPosition.x
                     };
-                    firstUnpin = true;
+                    this.floatingContainerHasMoved = true;
                 }
             } else {
                 switch (firstPosition) {
@@ -153,7 +155,7 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
                                 y: window.pageYOffset + window.innerHeight / 4 - parentElementPosition.y,
                                 x: (window.innerWidth - this.options.contentContainerElement.clientWidth) / 2 - parentElementPosition.x
                             };
-                            firstUnpin = true;
+                            this.floatingContainerHasMoved = true;
                         }
                         containerElementStyle.position = "fixed";
                         break;
@@ -161,7 +163,6 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
                     case NgxMatFloatingFirstPosition.Origin:
                         if (!this.relativePosition) {
                             this.relativePosition = {x: 0, y: 0};
-                            firstUnpin = true;
                         }
                         containerElementStyle.position = "absolute";
                         break;
@@ -175,7 +176,7 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
 
             this.floatingContainer.nativeElement.classList.remove("ngx-mat-floating-component-hidden");
 
-            if (this.options.activationAnimation.active && firstUnpin) {
+            if (this.options.activationAnimation.active && !this.floatingContainerHasMoved) {
                 if (this.options.activationAnimation.active == "all" || firstPosition == NgxMatFloatingFirstPosition.Origin) {
                     this.floatingContainerAnimation.play();
                 }
@@ -183,7 +184,7 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
 
             this.setPosition(this.relativePosition.x, this.relativePosition.y);
 
-            if (!firstUnpin || firstPosition != NgxMatFloatingFirstPosition.Origin) {
+            if (this.floatingContainerHasMoved || firstPosition != NgxMatFloatingFirstPosition.Origin) {
                 this.stateChange.next(NgxMatFloatingWrapperStatus.InitialPosition);
             }
 
@@ -200,8 +201,13 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
 
             this.adjustParentElementPosition(parentElementPosition);
 
-            const x = this.parentElementPosition.x - floatingContainerPosition.x + this.parentElementMarginOffset.x;
-            const y = this.parentElementPosition.y - floatingContainerPosition.y + this.parentElementMarginOffset.y;
+            let x = this.parentElementPosition.x - floatingContainerPosition.x;
+            let y = this.parentElementPosition.y - floatingContainerPosition.y;
+
+            if (this.hasMoved()) {
+                x += this.parentElementMarginOffset.x;
+                y += this.parentElementMarginOffset.y;
+            }
 
             this.setPosition(x, y);
 
@@ -217,15 +223,19 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
     }
 
     public hasMoved(): boolean {
-        return this.relativePosition.x !== 0 || this.relativePosition.y !== 0;
+        return this.floatingContainerHasMoved;
     }
 
     public setPosition(x: number, y: number) {
+        if (x != 0 || y != 0) {
+            this.floatingContainerHasMoved = true;
+        }
+
         this.floatingContainer.nativeElement.style.transform = `translate(${x}px, ${y}px)`;
     }
 
-    public getPosition(relative?: boolean): Point {
-        const position: Point = Object.assign({}, this.relativePosition || {x: 0, y: 0});
+    public getPosition(relative?: boolean): NgxMatFloatingPoint {
+        const position: NgxMatFloatingPoint = Object.assign({}, this.relativePosition || {x: 0, y: 0});
 
         if (!relative) {
             const topLeft = this.getAbsoluteOffset(this.contentParentElement);
@@ -307,7 +317,7 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
         this.stateChange.next(NgxMatFloatingWrapperStatus.Destroyed);
     }
 
-    private adjustParentElementPosition(parentElementPosition: Point) {
+    private adjustParentElementPosition(parentElementPosition: NgxMatFloatingPoint) {
         if (!this.parentElementPosition) {
             this.parentElementPosition = parentElementPosition;
         }
@@ -324,7 +334,7 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
     }
 
     // noinspection JSMethodCanBeStatic
-    private getAbsoluteOffset(element: HTMLElement): Point {
+    private getAbsoluteOffset(element: HTMLElement): NgxMatFloatingPoint {
         let x: number = 0;
         let y: number = 0;
 

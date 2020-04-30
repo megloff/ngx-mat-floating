@@ -1,5 +1,5 @@
 import {Optional, ViewContainerRef} from "@angular/core";
-import {NgxMatApplicationRef, NgxMatFloatingInjector, NgxMatFloatingService} from "./ngx-mat-floating.service";
+import {NgxMatFloatingApplicationRef, NgxMatFloatingInjector, NgxMatFloatingService} from "./ngx-mat-floating.service";
 
 export class NgxMatFloatingAppComponent {
     constructor(@Optional() maxPollingTimeout?: number) {
@@ -7,7 +7,7 @@ export class NgxMatFloatingAppComponent {
     }
 
     /**
-     * Wait for NgxMatAppServices to initialise and once the service is ready obtain the root view content reference
+     * Wait for NgxMatFloatingAppServices to initialise and once the service is ready obtain the root view content reference
      * and make it available via the service.
      *
      * In case the application component inherits from NgxMatFloatingAppComponent, but no ngxMatFloating
@@ -17,10 +17,10 @@ export class NgxMatFloatingAppComponent {
      * application to start up.
      */
     private grabRootViewContainerRef(pollingTimeout: number) {
-        let pollRetryTime = 10; // retry every 10ms
+        const pollRetryTime = 10; // retry every 10ms
 
-        if (NgxMatFloatingInjector && NgxMatApplicationRef && NgxMatApplicationRef.components.length > 0) {
-            const appRootInjector = NgxMatApplicationRef.components[0].injector;
+        if (NgxMatFloatingInjector && NgxMatFloatingApplicationRef && NgxMatFloatingApplicationRef.components.length > 0) {
+            const appRootInjector = NgxMatFloatingApplicationRef.components[0].injector;
             const rootViewContainerRef = appRootInjector.get(ViewContainerRef);
 
             const ngxMatFloatingService = NgxMatFloatingInjector.get(NgxMatFloatingService);

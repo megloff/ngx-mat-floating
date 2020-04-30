@@ -1,6 +1,6 @@
 import {AfterViewInit, Component, ElementRef, Injector, ViewChild, ViewContainerRef} from "@angular/core";
 import {NgxMatFloatingAppComponent} from "../../projects/ngx-mat-floating/src/lib/ngx-mat-floating-app-component";
-import {NgxMatFloatingActivationAnimation, NgxMatFloatingContainerOptions} from "../../projects/ngx-mat-floating/src/lib/ngx-mat-floating-wrapper/ngx-mat-floating-wrapper.component";
+import {NgxMatFloatingActivationAnimation} from "../../projects/ngx-mat-floating/src/lib/ngx-mat-floating-wrapper/ngx-mat-floating-wrapper.component";
 import {NgxMatFloatingDirective} from "../../projects/ngx-mat-floating/src/lib/directive/ngx-mat-floating.directive";
 import {NgxMatFloatingPinOptions} from "../../projects/ngx-mat-floating/src/lib/ngx-mat-floating-pin/ngx-mat-floating-pin.component";
 
@@ -46,7 +46,7 @@ export class AppComponent extends NgxMatFloatingAppComponent implements AfterVie
     }
 
     public stateChangeLogger(ev) {
-        // console.log(ev);
+        console.log(ev);
     }
 
     public attachButton() {
