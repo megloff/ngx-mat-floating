@@ -27,14 +27,14 @@
 }
 
 .ngx-mat-floating-component-container.ngx-mat-floating-component-glow {
-    animation-name: glow;
+    animation-name: ngxMatFloatingGlow;
     animation-duration: 0.09s;
     animation-iteration-count: 4;
     animation-direction: alternate;
     animation-timing-function: ease;
 }
 
-@keyframes glow {
+@keyframes ngxMatFloatingGlow {
     from {
         box-shadow: 0 0 5px -5px sandybrown;
     }
@@ -57,6 +57,8 @@
 ::ng-deep .ngx-mat-floating-unpinned {
     max-height: 0 !important;
     border: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 ::ng-deep .ngx-mat-floating-placeholder {

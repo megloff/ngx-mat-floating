@@ -16,7 +16,7 @@
     margin-top: 6px;
 }
 
-.floating-element {
+.plain-div-box {
     margin: 12px 0;
     border: 1px solid #125699;
 }
@@ -25,6 +25,6 @@
     padding: 6px;
 }
 
-::ng-deep .wrapper-content {
+::ng-deep .floating-wrapper-content {
     max-width: 958px;
 }

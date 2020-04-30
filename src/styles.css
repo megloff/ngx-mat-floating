@@ -22,7 +22,7 @@ p {
     flex: 1;
 }
 
-.toolbar {
+.titlebar {
     position: absolute;
     top: 0;
     left: 0;
@@ -35,16 +35,16 @@ p {
     font-weight: 600;
 }
 
-.toolbar img {
+.titlebar img {
     margin: 0 16px;
 }
 
-.toolbar #twitter-logo {
+.titlebar #twitter-logo {
     height: 40px;
     margin: 0 16px;
 }
 
-.toolbar #twitter-logo:hover {
+.titlebar #twitter-logo:hover {
     opacity: 0.8;
 }
 
@@ -54,7 +54,7 @@ p {
     padding: 0 16px;
     max-width: 960px;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     position: relative;
 }
 
@@ -71,7 +71,7 @@ svg.material-icons:not(:last-child) {
     fill: #888;
 }
 
-.card-container {
+.plain-div-container {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -94,7 +94,7 @@ svg.material-icons:not(:last-child) {
     line-height: 24px;
 }
 
-.card-container .card:not(:last-child) {
+.plain-div-container .card:not(:last-child) {
     margin-right: 0;
 }
 
@@ -103,16 +103,16 @@ svg.material-icons:not(:last-child) {
     width: 168px;
 }
 
-.card-container .card:not(.highlight-card) {
+.plain-div-container .card:not(.highlight-card) {
     cursor: pointer;
 }
 
-.card-container .card:not(.highlight-card):hover {
+.plain-div-container .card:not(.highlight-card):hover {
     transform: translateY(-3px);
     box-shadow: 0 4px 17px rgba(0, 0, 0, 0.35);
 }
 
-.card-container .card:not(.highlight-card):hover .material-icons path {
+.plain-div-container .card:not(.highlight-card):hover .material-icons path {
     fill: rgb(105, 103, 103);
 }
 
@@ -259,7 +259,7 @@ svg#clouds {
 /* Responsive Styles */
 @media screen and (max-width: 767px) {
 
-    .card-container > *:not(.circle-link) ,
+    .plain-div-container > *:not(.circle-link) ,
     .terminal {
         width: 100%;
     }

@@ -3,6 +3,9 @@
     background-color: transparent;
     opacity: 1;
     border-radius: 50%;
+    min-width: 20px;
+    min-height: 20px;
+    text-align: center;
 }
 
 .ngx-mat-floating-pin-button.ngx-mat-floating-pin-disabled {
@@ -23,9 +26,14 @@
     opacity: 0.5;
 }
 
-.ngx-mat-floating-pin-button-icon {
-    padding: 2px 1px 0 1px;
+/* must be available for injected elements */
+::ng-deep .ngx-mat-floating-pin-button-icon {
+    padding: 3px 1px 0 1px;
     -ms-transform: rotate(360deg);
     -webkit-transform: rotate(360deg);
     transform: rotate(360deg);
+}
+
+::ng-deep .ngx-mat-floating-pin-button-icon.ngx-mat-floating-pin-injected {
+    padding: 0;
 }

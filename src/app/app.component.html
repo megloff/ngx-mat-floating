@@ -1,20 +1,11 @@
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * The content below * * * * * * * * * * * -->
-<!-- * * * * * * * * * * is only a placeholder * * * * * * * * * * -->
-<!-- * * * * * * * * * * and can be replaced. * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * Delete the template below * * * * * * * * * * -->
-<!-- * * * * * * * to get started with your project! * * * * * * * * -->
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-
 <!-- Toolbar -->
-<div class="toolbar" role="banner">
+<div class="titlebar" role="banner">
     <img
             width="40"
             alt="Angular Logo"
             src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTAgMjUwIj4KICAgIDxwYXRoIGZpbGw9IiNERDAwMzEiIGQ9Ik0xMjUgMzBMMzEuOSA2My4ybDE0LjIgMTIzLjFMMTI1IDIzMGw3OC45LTQzLjcgMTQuMi0xMjMuMXoiIC8+CiAgICA8cGF0aCBmaWxsPSIjQzMwMDJGIiBkPSJNMTI1IDMwdjIyLjItLjFWMjMwbDc4LjktNDMuNyAxNC4yLTEyMy4xTDEyNSAzMHoiIC8+CiAgICA8cGF0aCAgZmlsbD0iI0ZGRkZGRiIgZD0iTTEyNSA1Mi4xTDY2LjggMTgyLjZoMjEuN2wxMS43LTI5LjJoNDkuNGwxMS43IDI5LjJIMTgzTDEyNSA1Mi4xem0xNyA4My4zaC0zNGwxNy00MC45IDE3IDQwLjl6IiAvPgogIDwvc3ZnPg=="
     />
-    <span>Welcome</span>
+    <span>NgxMatFloating Angular Extension</span>
     <div class="spacer"></div>
     <a aria-label="Angular on twitter" target="_blank" rel="noopener" href="https://twitter.com/angular" title="Twitter">
         <svg id="twitter-logo" height="24" data-name="Logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
@@ -50,18 +41,23 @@
         </svg>
     </div>
 
+    <div class="plain-div-box" style="border: 0">
+        <button (click)="attachButton()" [disabled]="testButtonHasListener" title="Attach external button">Attach</button>&nbsp;
+        <button (click)="detachButton()" [disabled]="!testButtonHasListener" title="Detach external button">Detach</button>&nbsp;->&nbsp;
+        <button #TestButton [disabled]="!testButtonHasListener">test</button>
+    </div>
     <!-- Resources -->
-    <div #ResourcesBox class="floating-element" ngxMatFloating>
+    <div #ResourcesBox class="plain-div-box" ngxMatFloating>
         <div class="floating-element-title" ngxMatFloatingTitle>
-            <div style="float: right; padding-right: 6px;">
-                <ngxMatFloatingPin [forFloatingElement]="ResourcesBox" color="white"></ngxMatFloatingPin>
+            <div style="float: right;">
+                <ngxMatFloatingPin [forFloatingElement]="ResourcesBox" [options]="{color:'white'}"></ngxMatFloatingPin>
             </div>
             <h2>Resources</h2>
         </div>
         <div ngxMatFloatingContent class="floating-element-content">
             <p>Here are some links to help you get started:</p>
 
-            <div class="card-container">
+            <div class="plain-div-container">
                 <a class="card" target="_blank" rel="noopener" href="https://angular.io/tutorial">
                     <svg class="material-icons" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                         <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/>
@@ -101,10 +97,10 @@
         </div>
     </div>
 
-    <div #NextSteps ngxMatFloating class="floating-element" wrapperClass="wrapper-content" firstPosition="origin">
+    <div #NextSteps ngxMatFloating class="plain-div-box" wrapperClass="floating-wrapper-content" firstPosition="origin" [activationAnimation]="activationAnimationOptions">
         <div class="floating-element-title" ngxMatFloatingTitle>
-            <div style="float: right; padding-right: 6px;">
-                <ngxMatFloatingPin [forFloatingElement]="NextSteps" color="white"></ngxMatFloatingPin>
+            <div style="float: right;">
+                <ngxMatFloatingPin [forFloatingElement]="NextSteps" [options]="{color:'white'}"></ngxMatFloatingPin>
             </div>
             <h2>Next Steps</h2>
         </div>
@@ -113,7 +109,7 @@
 
             <input type="hidden" #selection>
 
-            <div class="card-container">
+            <div class="plain-div-container">
                 <div class="card card-small" (click)="selection.value = 'component'" tabindex="0">
                     <svg class="material-icons" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                         <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
@@ -165,10 +161,10 @@
         </div>
     </div>
 
-    <div #TheCommand ngxMatFloating class="floating-element" [firstPosition]="{x:0, y:0}" (stateChange)="stateChangeLogger($event)">
+    <div #TheCommand ngxMatFloating class="plain-div-box" [firstPosition]="{x:10, y:100}" (stateChange)="stateChangeLogger($event)">
         <div class="floating-element-title" ngxMatFloatingTitle>
-            <div style="float: right; padding-right: 6px;">
-                <ngxMatFloatingPin [forFloatingElement]="TheCommand" color="white"></ngxMatFloatingPin>
+            <div style="float: right;">
+                <ngxMatFloatingPin [forFloatingElement]="TheCommand" [options]="theCommandPinOptions"></ngxMatFloatingPin>
             </div>
             <h2>The Command</h2>
         </div>
@@ -185,7 +181,7 @@
     </div>
 
     <!-- Links -->
-    <div class="card-container">
+    <div class="plain-div-container">
         <a class="circle-link" title="Animations" href="https://angular.io/guide/animations" target="_blank" rel="noopener">
             <svg id="Group_20" data-name="Group 20" xmlns="http://www.w3.org/2000/svg" width="21.813" height="23.453" viewBox="0 0 21.813 23.453">
                 <path id="Path_15" data-name="Path 15" d="M4099.584,972.736h0l-10.882,3.9,1.637,14.4,9.245,5.153,9.245-5.153,1.686-14.4Z" transform="translate(-4088.702 -972.736)" fill="#ffa726"/>
@@ -270,7 +266,7 @@
 
     <!-- Footer -->
     <footer>
-        Love NgxFloating?&nbsp;
+        Love NgxMatFloating?&nbsp;
         <a href="https://github.com/megloff/ngx-floating" target="_blank" rel="noopener"> Give the repo a star.
             <div class="github-star-badge">
                 <svg class="material-icons" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
@@ -295,13 +291,3 @@
     </svg>
 
 </div>
-
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * The content above * * * * * * * * * * * -->
-<!-- * * * * * * * * * * is only a placeholder * * * * * * * * * * -->
-<!-- * * * * * * * * * * and can be replaced. * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * End of Placeholder * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-
-

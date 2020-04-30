@@ -1,6 +1,6 @@
-import {AfterViewInit, ComponentFactoryResolver, Directive, ElementRef, EventEmitter, Input, OnInit, Output, ViewContainerRef} from "@angular/core";
+import {AfterViewInit, ComponentFactoryResolver, Directive, ElementRef, EventEmitter, Input, OnInit, Output} from "@angular/core";
 
-import {NgxMatFloatingWrapperComponent, NgxMatFloatingWrapperStatus, NgxMatFloatingFirstPosition} from "../ngx-mat-floating-wrapper/ngx-mat-floating-wrapper.component";
+import {NgxMatFloatingWrapperComponent, NgxMatFloatingWrapperStatus, NgxMatFloatingFirstPosition, NgxMatFloatingActivationAnimation} from "../ngx-mat-floating-wrapper/ngx-mat-floating-wrapper.component";
 import {NgxMatFloatingPinComponent} from "../ngx-mat-floating-pin/ngx-mat-floating-pin.component";
 import {NgxMatFloatingService} from "../ngx-mat-floating.service";
 import {Point} from "@angular/cdk/drag-drop/drag-ref";
@@ -15,12 +15,13 @@ export interface NxgMatFloatingStatusChangeEvent {
     selector: "[ngxMatFloating]"
 })
 export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
-    @Input("floatingWidth") floatingComponentWidth: string;
-    @Input("firstPosition") firstPosition: NgxMatFloatingFirstPosition | Point = NgxMatFloatingFirstPosition.Centered;
-    @Input("wrapperClass") wrapperClass: string;
-    @Input("originActivationFlash") originActivationFlash: boolean | string | number;
-
     @Output() stateChange: EventEmitter<NxgMatFloatingStatusChangeEvent> = new EventEmitter();
+
+    @Input("floatingWidth") private floatingComponentWidth: string;
+    @Input("firstPosition") private firstPosition: NgxMatFloatingFirstPosition | Point = NgxMatFloatingFirstPosition.Centered;
+    @Input("wrapperClass") private wrapperClass: string;
+    @Input("activationAnimation") private activationAnimation: boolean | string | NgxMatFloatingActivationAnimation = {active: true};
+    @Input("rememberPosition") private rememberPosition: boolean = true;
 
     private floatingElement: HTMLElement;
     private floatingElementMaxHeight: string;
@@ -30,7 +31,8 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
     private floatingViewElement: HTMLElement;
     private floatingViewInstance: NgxMatFloatingWrapperComponent;
 
-    private pinButtons: NgxMatFloatingPinComponent[] = [];
+    private pinned: boolean = true;
+    private pinButtons: (NgxMatFloatingPinComponent | HTMLButtonElement)[] = [];
 
     constructor(
         private el: ElementRef,
@@ -40,6 +42,73 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
         // no code
     }
 
+    static registerPinButton(floatingDirective: HTMLElement | ElementRef | NgxMatFloatingDirective, pinButton: NgxMatFloatingPinComponent | HTMLButtonElement) {
+        if ((<any>floatingDirective).nativeElement) {
+            floatingDirective = (<any>floatingDirective).nativeElement;
+        }
+
+        if ((<any>floatingDirective).__ngxMatFloatingDirective) {
+            floatingDirective = (<any>floatingDirective).__ngxMatFloatingDirective;
+        }
+
+        if (floatingDirective instanceof NgxMatFloatingDirective) {
+            if (pinButton instanceof HTMLButtonElement) {
+                (<any>pinButton).__ngxMatFloatingToogle = floatingDirective.togglePin.bind(floatingDirective);
+                pinButton.addEventListener("click", (<any>pinButton).__ngxMatFloatingToogle);
+            }
+            floatingDirective.pinButtons.push(pinButton);
+        } else {
+            console.error("you must pass a reference to a element marked with ngxMatFloating");
+        }
+    }
+
+    static unregisterPinButton(floatingDirective: HTMLElement | ElementRef | NgxMatFloatingDirective, pinButton: NgxMatFloatingPinComponent | HTMLButtonElement) {
+        if ((<any>floatingDirective).nativeElement) {
+            floatingDirective = (<any>floatingDirective).nativeElement;
+        }
+
+        if ((<any>floatingDirective).__ngxMatFloatingDirective) {
+            floatingDirective = (<any>floatingDirective).__ngxMatFloatingDirective;
+        }
+
+        if (floatingDirective instanceof NgxMatFloatingDirective) {
+            if (pinButton instanceof HTMLButtonElement && (<any>pinButton).__ngxMatFloatingToogle) {
+                pinButton.removeEventListener("click", (<any>pinButton).__ngxMatFloatingToogle);
+                (<any>pinButton).__ngxMatFloatingToogle = null;
+            }
+
+            const idx = floatingDirective.pinButtons.findIndex((button) => {
+                return button == pinButton;
+            });
+
+            if (idx >= 0) {
+                floatingDirective.pinButtons.splice(idx, 1);
+            }
+        } else {
+            console.error("you must pass a reference to a element marked with ngxMatFloating");
+        }
+    }
+
+    public isPinned(): boolean {
+        return this.pinned;
+    }
+
+    public togglePin(ev?: MouseEvent) {
+        if (this.pinned) {
+            this.unpinElement(ev);
+        } else {
+            this.pinElement(ev);
+        }
+    }
+
+    public setPinned(pinned, ev?: MouseEvent) {
+        if (pinned) {
+            this.pinElement(ev);
+        } else {
+            this.unpinElement(ev);
+        }
+    }
+
     public unpinElement(ev?: MouseEvent) {
         if (ev) {
             ev.preventDefault();
@@ -47,20 +116,21 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
         }
 
         this.pinButtons.forEach((button) => {
-            button.pinned = false;
+            if (button instanceof NgxMatFloatingPinComponent) {
+                button.setLocalPinnedFlag(false);
+            }
         });
 
-        this.floatingElementMaxHeight = this.floatingElement.style.maxHeight;
+        this.pinned = false;
+
+        if (this.floatingElementMaxHeight === undefined) {
+            this.floatingElementMaxHeight = this.floatingElement.style.maxHeight;
+        }
+
         this.floatingElement.style.maxHeight = this.floatingElement.clientHeight + "px";
         this.floatingElement.classList.add("ngx-mat-floating-placeholder");
 
-        this.floatingViewInstance.changeToUnpinned({
-            titleElement: this.headerTitleElement,
-            contentContainerElement: this.contentContainerElement,
-            width: this.floatingComponentWidth,
-            firstPosition: this.firstPosition,
-            originActivationFlash: this.service.getBooleanValue(this.originActivationFlash, true)
-        });
+        this.floatingViewInstance.changeToUnpinned();
     }
 
     public pinElement(ev?: MouseEvent) {
@@ -72,16 +142,30 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
         this.floatingViewInstance.changeToPinned();
 
         this.pinButtons.forEach((button) => {
-            button.pinned = true;
+            if (button instanceof NgxMatFloatingPinComponent) {
+                button.setLocalPinnedFlag(true);
+            }
         });
+
+        this.pinned = true;
     }
 
-    public registerPinButton(pinButton: NgxMatFloatingPinComponent) {
-        this.pinButtons.push(pinButton);
+    public registerPinButton(pinButton: NgxMatFloatingPinComponent | HTMLButtonElement) {
+        NgxMatFloatingDirective.registerPinButton(this, pinButton);
     }
 
+    public unregisterPinButton(pinButton: NgxMatFloatingPinComponent | HTMLButtonElement) {
+        NgxMatFloatingDirective.unregisterPinButton(this, pinButton);
+    }
+
+    /**
+     * @hidden
+     * @exclude
+     * @ignore
+     * @internal
+     */
     ngOnInit() {
-        (<any>this.el.nativeElement).__ngMatFloatingDirective = this;
+        (<any>this.el.nativeElement).__ngxMatFloatingDirective = this;
 
         this.floatingElement = this.el.nativeElement;
         this.headerTitleElement = this.floatingElement.querySelector("[ngxMatFloatingTitle]");
@@ -92,6 +176,12 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
         }
     }
 
+    /**
+     * @hidden
+     * @exclude
+     * @ignore
+     * @internal
+     */
     ngAfterViewInit() {
         this.floatingElement.addEventListener("transitionend", (ev) => {
             if (ev.srcElement == this.floatingElement) {
@@ -104,7 +194,7 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
         });
 
         // 30 ms of polling is enough, because once NgxMatAppServices is available, it should initialize the
-        // root view container reference within 10ms.
+        // root view container reference within the next 10ms.
         this.insertFloatingWrapper(30);
     }
 
@@ -123,6 +213,33 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
             this.floatingViewElement.style.display = this.floatingElement.parentElement.style.display;
 
             rootContainerViewRef.insert(component.hostView);
+
+            let activationAnimation: NgxMatFloatingActivationAnimation;
+            if (this.activationAnimation) {
+                if (this.activationAnimation == "all") {
+                    activationAnimation = {
+                        active: "all"
+                    };
+                } else if (typeof this.activationAnimation != "object") {
+                    activationAnimation = {
+                        active: this.service.getBooleanValue(this.activationAnimation as (string | number | boolean), true)
+                    };
+                } else {
+                    this.activationAnimation = Object.assign({
+                        active: true
+                    }, this.activationAnimation);
+
+                    activationAnimation = this.activationAnimation as NgxMatFloatingActivationAnimation;
+                }
+            }
+
+            this.floatingViewInstance.setOptions({
+                titleElement: this.headerTitleElement,
+                contentContainerElement: this.contentContainerElement,
+                width: this.floatingComponentWidth,
+                firstPosition: this.firstPosition,
+                activationAnimation: activationAnimation
+            });
 
             this.floatingViewInstance.stateChange.subscribe((status: NgxMatFloatingWrapperStatus) => {
                 switch (status) {
