@@ -1,7 +1,7 @@
 import {AfterViewInit, ComponentFactoryResolver, Directive, ElementRef, EventEmitter, Input, OnInit, Output} from "@angular/core";
 
 import {NgxMatFloatingService} from "../ngx-mat-floating.service";
-import {NgxMatFloatingPinComponent} from "../ngx-mat-floating-pin/ngx-mat-floating-pin.component";
+import {NgxMatFloatingPinComponentInterface} from "../ngx-mat-floating-pin/ngx-mat-floating-pin.component.interface";
 import {
     NgxMatFloatingWrapperComponent,
     NgxMatFloatingWrapperStatus,
@@ -37,7 +37,7 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
     private floatingViewInstance: NgxMatFloatingWrapperComponent;
 
     private pinned: boolean = true;
-    private pinButtons: (NgxMatFloatingPinComponent | HTMLButtonElement)[] = [];
+    private pinButtons: (NgxMatFloatingPinComponentInterface | HTMLButtonElement)[] = [];
 
     constructor(
         private el: ElementRef,
@@ -47,51 +47,65 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
         // no code
     }
 
-    static registerPinButton(floatingDirective: HTMLElement | ElementRef | NgxMatFloatingDirective, pinButton: NgxMatFloatingPinComponent | HTMLButtonElement) {
-        if ((<any>floatingDirective).nativeElement) {
-            floatingDirective = (<any>floatingDirective).nativeElement;
-        }
+    static registerPinButton(floatingDirective: HTMLElement | ElementRef | NgxMatFloatingDirective, pinButton: NgxMatFloatingPinComponentInterface | HTMLButtonElement, errorText?: string) {
+        const fd = NgxMatFloatingDirective.getFloatingDirective(floatingDirective);
 
-        if ((<any>floatingDirective).__ngxMatFloatingDirective) {
-            floatingDirective = (<any>floatingDirective).__ngxMatFloatingDirective;
-        }
-
-        if (floatingDirective instanceof NgxMatFloatingDirective) {
+        if (fd) {
             if (pinButton instanceof HTMLButtonElement) {
-                (<any>pinButton).__ngxMatFloatingToogle = floatingDirective.togglePin.bind(floatingDirective);
+                (<any>pinButton).__ngxMatFloatingToogle = fd.togglePin.bind(fd);
                 pinButton.addEventListener("click", (<any>pinButton).__ngxMatFloatingToogle);
             }
-            floatingDirective.pinButtons.push(pinButton);
+            fd.pinButtons.push(pinButton);
         } else {
-            console.error("you must pass a reference to a element marked with ngxMatFloating");
+            console.error(errorText || "you must pass a reference to a element marked with ngxMatFloating", floatingDirective);
         }
     }
 
-    static unregisterPinButton(floatingDirective: HTMLElement | ElementRef | NgxMatFloatingDirective, pinButton: NgxMatFloatingPinComponent | HTMLButtonElement) {
-        if ((<any>floatingDirective).nativeElement) {
-            floatingDirective = (<any>floatingDirective).nativeElement;
-        }
+    static unregisterPinButton(floatingDirective: HTMLElement | ElementRef | NgxMatFloatingDirective, pinButton: NgxMatFloatingPinComponentInterface | HTMLButtonElement) {
+        const fd = NgxMatFloatingDirective.getFloatingDirective(floatingDirective);
 
-        if ((<any>floatingDirective).__ngxMatFloatingDirective) {
-            floatingDirective = (<any>floatingDirective).__ngxMatFloatingDirective;
-        }
-
-        if (floatingDirective instanceof NgxMatFloatingDirective) {
+        if (fd) {
             if (pinButton instanceof HTMLButtonElement && (<any>pinButton).__ngxMatFloatingToogle) {
                 pinButton.removeEventListener("click", (<any>pinButton).__ngxMatFloatingToogle);
                 (<any>pinButton).__ngxMatFloatingToogle = null;
             }
 
-            const idx = floatingDirective.pinButtons.findIndex((button) => {
+            const idx = fd.pinButtons.findIndex((button) => {
                 return button == pinButton;
             });
 
             if (idx >= 0) {
-                floatingDirective.pinButtons.splice(idx, 1);
+                fd.pinButtons.splice(idx, 1);
             }
         } else {
-            console.error("you must pass a reference to a element marked with ngxMatFloating");
+            console.error("you must pass a reference to a element marked with ngxMatFloating", floatingDirective);
         }
+    }
+
+    static getFloatingDirective(floatingElement: HTMLElement | ElementRef | NgxMatFloatingDirective): NgxMatFloatingDirective {
+        let floatingDirective: NgxMatFloatingDirective;
+
+        if (floatingElement instanceof NgxMatFloatingDirective) {
+            floatingDirective = floatingElement;
+        } else {
+            if ((<any>floatingElement).nativeElement) {
+                (<any>floatingElement) = (<any>floatingElement).nativeElement;
+            }
+
+            if ((<any>floatingElement).__ngxMatFloatingDirective) {
+                floatingDirective = (<any>floatingElement).__ngxMatFloatingDirective;
+            } else if ((<any>floatingElement)._viewContainerRef) {
+                if ((<any>floatingElement)._viewContainerRef.element) {
+                    if ((<any>floatingElement)._viewContainerRef.element.__ngxMatFloatingDirective) {
+                        floatingDirective = (<any>floatingElement)._viewContainerRef.element.__ngxMatFloatingDirective;
+                    } else if ((<any>floatingElement)._viewContainerRef.element.nativeElement && (<any>floatingElement)._viewContainerRef.element.nativeElement.__ngxMatFloatingDirective) {
+                        floatingDirective = (<any>floatingElement)._viewContainerRef.element.nativeElement.__ngxMatFloatingDirective;
+                    }
+                }
+            }
+        }
+
+        return floatingDirective instanceof NgxMatFloatingDirective ? floatingDirective : null;
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -122,8 +136,8 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
             ev.stopPropagation();
         }
 
-        this.pinButtons.forEach((button) => {
-            if (button instanceof NgxMatFloatingPinComponent) {
+        this.pinButtons.forEach((button: NgxMatFloatingPinComponentInterface) => {
+            if (button.setLocalPinnedFlag) {
                 button.setLocalPinnedFlag(false);
             }
         });
@@ -148,8 +162,8 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
 
         this.floatingViewInstance.changeToPinned();
 
-        this.pinButtons.forEach((button) => {
-            if (button instanceof NgxMatFloatingPinComponent) {
+        this.pinButtons.forEach((button: NgxMatFloatingPinComponentInterface) => {
+            if (button.setLocalPinnedFlag) {
                 button.setLocalPinnedFlag(true);
             }
         });
@@ -157,12 +171,13 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
         this.pinned = true;
     }
 
-    public registerPinButton(pinButton: NgxMatFloatingPinComponent | HTMLButtonElement) {
+    // noinspection JSUnusedGlobalSymbols
+    public registerPinButton(pinButton: NgxMatFloatingPinComponentInterface | HTMLButtonElement) {
         NgxMatFloatingDirective.registerPinButton(this, pinButton);
     }
 
     // noinspection JSUnusedGlobalSymbols
-    public unregisterPinButton(pinButton: NgxMatFloatingPinComponent | HTMLButtonElement) {
+    public unregisterPinButton(pinButton: NgxMatFloatingPinComponentInterface | HTMLButtonElement) {
         NgxMatFloatingDirective.unregisterPinButton(this, pinButton);
     }
 
@@ -286,7 +301,7 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
                     this.insertFloatingWrapper(pollingTimeout - pollRetryTime);
                 }, pollRetryTime);
             } else {
-                console.warn("To use an element with ngxMatFloating, your application component must inherit from NgxMatFloatingAppComponent!");
+                console.error("To use an element with ngxMatFloating, your application component must inherit from NgxMatFloatingAppComponent!");
             }
         }
     }

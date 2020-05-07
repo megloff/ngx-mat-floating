@@ -1,3 +1,18 @@
+::ng-deep ngxMatFloatingPin {
+    box-sizing: content-box;
+}
+
+* {
+    box-sizing: content-box;
+}
+
+::ng-deep .mat-expansion-panel-header div[class].ngx-mat-floating-pin-button {
+    padding: 0;
+    margin-left: 10px;
+    margin-right: -10px;
+}
+
+
 .ngx-mat-floating-pin-button {
     padding: 6px;
     background-color: transparent;

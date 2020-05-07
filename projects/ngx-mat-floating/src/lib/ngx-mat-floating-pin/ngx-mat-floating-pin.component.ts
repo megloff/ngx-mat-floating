@@ -3,6 +3,7 @@ import {NgxMatFloatingDirective} from "../directive/ngx-mat-floating.directive";
 import {NgxMatFloatingService} from "../ngx-mat-floating.service";
 import {Buffer} from "buffer";
 import {DomSanitizer, SafeResourceUrl} from "@angular/platform-browser";
+import {NgxMatFloatingPinComponentInterface} from "./ngx-mat-floating-pin.component.interface";
 
 export interface NgxMatFloatingPinOptions {
     iconType?: "svg" | "html" | "uri" | "url";
@@ -16,7 +17,7 @@ export interface NgxMatFloatingPinOptions {
     templateUrl: "./ngx-mat-floating-pin.component.html",
     styleUrls: ["./ngx-mat-floating-pin.component.css"]
 })
-export class NgxMatFloatingPinComponent implements OnInit, AfterViewInit {
+export class NgxMatFloatingPinComponent implements NgxMatFloatingPinComponentInterface, OnInit, AfterViewInit {
     public pinned: boolean = true;
     public floatingDirective: NgxMatFloatingDirective;
 
@@ -113,14 +114,10 @@ export class NgxMatFloatingPinComponent implements OnInit, AfterViewInit {
 
     ngOnInit(): void {
         if (this.floatingElement) {
-            this.floatingDirective = (<any>this.floatingElement).__ngxMatFloatingDirective;
-            if (this.floatingDirective) {
-                this.floatingDirective.registerPinButton(this);
-            } else {
-                console.error("option [forFloatingElement] must point to an element marked with <ngxMatFloating>");
-            }
+            this.floatingDirective = NgxMatFloatingDirective.getFloatingDirective(this.floatingElement);
+            NgxMatFloatingDirective.registerPinButton(this.floatingDirective, this, "option [forFloatingElement] must point to an element marked with <ngxMatFloating>");
         } else {
-            console.error("missing mandatory [forFloatingElement] on <ngxMatFloatingPin>");
+            console.error("missing mandatory [forFloatingElement] on <ngxMatFloatingPin>", this.floatingElement);
         }
     }
 
