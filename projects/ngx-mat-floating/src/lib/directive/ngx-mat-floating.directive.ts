@@ -1,14 +1,20 @@
 import {AfterViewInit, ComponentFactoryResolver, Directive, ElementRef, EventEmitter, Input, OnInit, Output} from "@angular/core";
 
-import {NgxMatFloatingService} from "../ngx-mat-floating.service";
+import {NgxMatFloatingElementType, NgxMatFloatingService} from "../ngx-mat-floating.service";
 import {NgxMatFloatingPinComponentInterface} from "../ngx-mat-floating-pin/ngx-mat-floating-pin.component.interface";
 import {
-    NgxMatFloatingWrapperComponent,
-    NgxMatFloatingWrapperStatus,
-    NgxMatFloatingFirstPosition,
     NgxMatFloatingActivationAnimation,
-    NgxMatFloatingPoint
+    NgxMatFloatingFirstPosition,
+    NgxMatFloatingPoint,
+    NgxMatFloatingWrapperComponent,
+    NgxMatFloatingWrapperStatus
 } from "../ngx-mat-floating-wrapper/ngx-mat-floating-wrapper.component";
+import {MatExpansionPanel} from "@angular/material/expansion";
+import {first} from "rxjs/operators";
+
+interface NgxMatFloatingParentElementState {
+    expanded?: boolean;
+}
 
 export interface NxgMatFloatingStatusChangeEvent {
     type: NgxMatFloatingWrapperStatus;
@@ -23,7 +29,7 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
     @Output() stateChange: EventEmitter<NxgMatFloatingStatusChangeEvent> = new EventEmitter();
 
     @Input("floatingWidth") private floatingComponentWidth: string;
-    @Input("firstPosition") private firstPosition: NgxMatFloatingFirstPosition | NgxMatFloatingPoint = NgxMatFloatingFirstPosition.Centered;
+    @Input("firstPosition") private firstPosition: NgxMatFloatingFirstPosition | NgxMatFloatingPoint = NgxMatFloatingFirstPosition.Origin;
     @Input("wrapperClass") private wrapperClass: string;
     @Input("activationAnimation") private activationAnimation: boolean | string | NgxMatFloatingActivationAnimation = {active: true};
     @Input("rememberPosition") private rememberPosition: boolean = true;
@@ -38,6 +44,10 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
 
     private pinned: boolean = true;
     private pinButtons: (NgxMatFloatingPinComponentInterface | HTMLButtonElement)[] = [];
+
+    private elementType: NgxMatFloatingElementType;
+    private floatingElementInstance: any;
+    private originalState: NgxMatFloatingParentElementState = {};
 
     constructor(
         private el: ElementRef,
@@ -54,6 +64,8 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
             if (pinButton instanceof HTMLButtonElement) {
                 (<any>pinButton).__ngxMatFloatingToogle = fd.togglePin.bind(fd);
                 pinButton.addEventListener("click", (<any>pinButton).__ngxMatFloatingToogle);
+            } else if (pinButton.getFloatingElementInstance) {
+                fd.floatingElementInstance = pinButton.getFloatingElementInstance();
             }
             fd.pinButtons.push(pinButton);
         } else {
@@ -87,7 +99,7 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
 
         if (floatingElement instanceof NgxMatFloatingDirective) {
             floatingDirective = floatingElement;
-        } else {
+        } else if (floatingElement) {
             if ((<any>floatingElement).nativeElement) {
                 (<any>floatingElement) = (<any>floatingElement).nativeElement;
             }
@@ -151,7 +163,22 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
         this.floatingElement.style.maxHeight = this.floatingElement.clientHeight + "px";
         this.floatingElement.classList.add("ngx-mat-floating-placeholder");
 
-        this.floatingViewInstance.changeToUnpinned();
+        if (this.elementType == NgxMatFloatingElementType.MatExpansionPanel) {
+            const matExpansionPanel: MatExpansionPanel = this.floatingElementInstance;
+            this.originalState.expanded = matExpansionPanel.expanded;
+
+            if (matExpansionPanel.expanded) {
+                this.floatingViewInstance.changeToUnpinned();
+            } else {
+                matExpansionPanel.afterExpand.pipe(first()).subscribe((message) => {
+                    this.floatingViewInstance.changeToUnpinned();
+                });
+
+                matExpansionPanel.expanded = true;
+            }
+        } else {
+            this.floatingViewInstance.changeToUnpinned();
+        }
     }
 
     public pinElement(ev?: MouseEvent) {
@@ -167,6 +194,13 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
                 button.setLocalPinnedFlag(true);
             }
         });
+
+        if (this.elementType == NgxMatFloatingElementType.MatExpansionPanel) {
+            const matExpansionPanel: MatExpansionPanel = this.floatingElementInstance;
+            if (!this.originalState.expanded) {
+                matExpansionPanel.expanded = false;
+            }
+        }
 
         this.pinned = true;
     }
@@ -193,6 +227,20 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
         this.floatingElement = this.el.nativeElement;
         this.headerTitleElement = this.floatingElement.querySelector("[ngxMatFloatingTitle]");
         this.contentContainerElement = this.floatingElement.querySelector("[ngxMatFloatingContent]");
+
+        switch (this.floatingElement.tagName) {
+            case "MAT-EXPANSION-PANEL":
+                this.elementType = NgxMatFloatingElementType.MatExpansionPanel;
+                break;
+            case "DIV":
+                this.elementType = NgxMatFloatingElementType.Generic;
+                break;
+
+            default:
+                console.log("untested element type", this.floatingElement.tagName);
+                this.elementType = NgxMatFloatingElementType.Generic;
+                break;
+        }
 
         if (!this.contentContainerElement) {
             console.warn("you must mark your content element with ngxMatFloatingContent");
@@ -230,9 +278,12 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
             const factory = this.componentFactoryResolver.resolveComponentFactory(NgxMatFloatingWrapperComponent);
             const component = factory.create(rootContainerViewRef.parentInjector);
 
-            this.floatingViewElement = component.location.nativeElement;
+            this.floatingViewElement = component.location.nativeElement.firstElementChild;
             this.floatingViewInstance = component.instance;
 
+            const rect = this.floatingElement.getBoundingClientRect();
+
+            this.floatingViewElement.style.width = rect.width + "px";
             this.floatingViewElement.style.display = this.floatingElement.parentElement.style.display;
 
             rootContainerViewRef.insert(component.hostView);
@@ -257,7 +308,10 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
             }
 
             this.floatingViewInstance.setOptions({
+                floatingElement: this.floatingElement,
+                elementType: this.elementType,
                 titleElement: this.headerTitleElement,
+                elementClassList: this.floatingElement.classList.toString().replace(/(mat-focus-indicator\s*|ng-trigger-\S+\s*)/g, ""),
                 contentContainerElement: this.contentContainerElement,
                 width: this.floatingComponentWidth,
                 firstPosition: this.firstPosition,
@@ -274,8 +328,8 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit {
 
                     case NgxMatFloatingWrapperStatus.InitialPosition:
                     case NgxMatFloatingWrapperStatus.DragStart:
-                        this.floatingElement.classList.add("ngx-mat-floating-transition");
-                        this.floatingElement.classList.add("ngx-mat-floating-unpinned");
+                            this.floatingElement.classList.add("ngx-mat-floating-transition");
+                            this.floatingElement.classList.add("ngx-mat-floating-unpinned");
                         break;
 
                     case NgxMatFloatingWrapperStatus.Pinned:

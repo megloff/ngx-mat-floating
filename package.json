@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --port 4203 --open",
+    "start": "ng serve --port 4203",
     "build": "ng build",
     "buildlib": "ng build ngx-mat-floating",
     "test": "ng test",
@@ -22,7 +22,9 @@
     "@angular/platform-browser": "^9.1.4",
     "@angular/platform-browser-dynamic": "^9.1.4",
     "@angular/router": "^9.1.4",
+    "@mdi/angular-material": "^5.1.45",
     "buffer": "^5.6.0",
+    "material": "^0.4.3",
     "rxjs": "~6.5.4",
     "tslib": "^1.11.2",
     "zone.js": "~0.10.2"

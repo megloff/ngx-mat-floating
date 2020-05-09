@@ -1,6 +1,7 @@
 import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, EventEmitter, NgZone, OnDestroy, OnInit, ViewChild} from "@angular/core";
 import {fromEvent, of, Subject} from "rxjs";
 import {map, switchMap, takeUntil} from "rxjs/operators";
+import {NgxMatFloatingElementType} from "../ngx-mat-floating.service";
 
 export interface NgxMatFloatingPoint {
     x: number;
@@ -24,9 +25,12 @@ export interface NgxMatFloatingActivationAnimation {
 }
 
 export interface NgxMatFloatingContainerOptions {
+    floatingElement: HTMLElement;
+    elementType: NgxMatFloatingElementType;
+    titleElement?: HTMLElement;
+    elementClassList?: string;
     contentContainerElement: HTMLElement;
     firstPosition?: NgxMatFloatingFirstPosition | NgxMatFloatingPoint;
-    titleElement?: HTMLElement;
     width?: string | number;
     activationAnimation?: NgxMatFloatingActivationAnimation;
 }
@@ -117,7 +121,7 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
 
             this.floatingContent.nativeElement.appendChild(this.options.contentContainerElement);
 
-            const parentElementPosition = this.getAbsoluteOffset(this.contentParentElement);
+            const parentElementPosition = this.getAbsoluteOffset(this.options.floatingElement);
 
             const styles: CSSStyleDeclaration = (<any>this.contentParentElement).currentStyle || window.getComputedStyle(this.contentParentElement);
             this.parentElementMarginOffset = {
@@ -216,6 +220,14 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
             this.pinned = true;
             this.stateChange.next(NgxMatFloatingWrapperStatus.Pinned);
         }
+    }
+
+    public getWrapperClass(): string {
+        let classNames: string = this.options.elementClassList || "";
+
+        classNames += " ngx-mat-floating-component-wrapper";
+
+        return classNames;
     }
 
     public getDragHandleElement(): HTMLElement {
@@ -452,7 +464,7 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
         if (this.titleParentElement) {
             const titlePlaceholderElement = this.titleParentElement.querySelector("ngx-mat-floating-title-placeholder");
             if (titlePlaceholderElement) {
-                this.titleParentElement.replaceChild(this.floatingTitle.nativeElement.firstElementChild, titlePlaceholderElement);
+                this.titleParentElement.replaceChild(this.options.titleElement, titlePlaceholderElement);
             }
             this.titleParentElement = null;
         }

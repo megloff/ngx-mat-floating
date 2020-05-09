@@ -12,6 +12,11 @@
     margin-right: -10px;
 }
 
+::ng-deep .mat-expansion-panel-header div[class].ngx-mat-floating-pin-button:hover {
+    opacity: inherit;
+    background-color: inherit;
+}
+
 
 .ngx-mat-floating-pin-button {
     padding: 6px;

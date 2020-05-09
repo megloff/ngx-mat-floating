@@ -3,12 +3,13 @@ import {ApplicationRef, Injectable, Injector, ViewContainerRef} from "@angular/c
 export let NgxMatFloatingInjector: Injector;
 export let NgxMatFloatingApplicationRef: ApplicationRef;
 
+export enum NgxMatFloatingElementType { Generic, MatExpansionPanel}
+
 @Injectable({
     providedIn: "root"
 })
 export class NgxMatFloatingService {
     private rootViewContainerRef: ViewContainerRef;
-    private readonly transitionEndEvenName: string;
 
     constructor(private injector: Injector, public applicationRef: ApplicationRef) {
         NgxMatFloatingApplicationRef = applicationRef;

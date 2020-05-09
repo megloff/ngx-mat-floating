@@ -5,21 +5,25 @@ import {NgxMatFloatingPinComponent} from "./ngx-mat-floating-pin/ngx-mat-floatin
 import {NgxMatFloatingWrapperComponent} from "./ngx-mat-floating-wrapper/ngx-mat-floating-wrapper.component";
 import {NgxMatFloatingTitleDirective} from "./directive/ngx-mat-floating-title.directive";
 import {NgxMatFloatingService} from "./ngx-mat-floating.service";
+import {NgxMatFloatingContentDirective} from "./directive/ngx-mat-floating-content.directive";
 
 @NgModule({
     declarations: [
         NgxMatFloatingDirective,
         NgxMatFloatingPinComponent,
         NgxMatFloatingWrapperComponent,
-        NgxMatFloatingTitleDirective
+        NgxMatFloatingTitleDirective,
+        NgxMatFloatingContentDirective
     ],
     imports: [
         CommonModule
     ],
-    providers:[NgxMatFloatingService],
+    providers: [NgxMatFloatingService],
     exports: [
         NgxMatFloatingDirective,
-        NgxMatFloatingPinComponent
+        NgxMatFloatingPinComponent,
+        NgxMatFloatingTitleDirective,
+        NgxMatFloatingContentDirective
     ]
 })
 export class NgxMatFloatingModule {

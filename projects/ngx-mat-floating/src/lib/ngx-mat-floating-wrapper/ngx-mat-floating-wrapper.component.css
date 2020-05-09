@@ -2,12 +2,15 @@
     position: fixed;
     background-color: white;
     opacity: 1;
-    border: 1px solid black;
     -moz-transition: transform 0.3s ease-in-out;
     -ms-transition: transform 0.3s ease-in-out;
     -o-transition: transform 0.3s ease-in-out;
     -webkit-transition: transform 0.3s ease-in-out;
     transition: transform 0.3s ease-in-out;
+}
+
+.ngx-mat-floating-component-wrapper-generic {
+    border: 1px solid black;
 }
 
 .ngx-mat-floating-component-container.ngx-mat-floating-component-dragging {
@@ -52,6 +55,7 @@
     transition: max-height 0.3s ease-in-out;
     overflow: hidden;
     border: 0 !important;
+    box-shadow: none !important;
 }
 
 ::ng-deep .ngx-mat-floating-unpinned {
@@ -59,6 +63,7 @@
     border: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
+    box-shadow: none !important;
 }
 
 ::ng-deep .ngx-mat-floating-placeholder {
