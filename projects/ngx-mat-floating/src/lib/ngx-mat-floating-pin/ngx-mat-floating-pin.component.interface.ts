@@ -8,7 +8,4 @@ export interface NgxMatFloatingPinComponentInterface {
     pinElement(ev: MouseEvent): void;
 
     unpinElement(ev: MouseEvent): void;
-
-     getFloatingElementInstance(): ElementRef<HTMLElement> | any;
-
 }

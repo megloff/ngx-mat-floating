@@ -48,7 +48,7 @@
 
 /* must be available for injected elements */
 ::ng-deep .ngx-mat-floating-pin-button-icon {
-    padding: 3px 1px 0 1px;
+    padding: 3px 1px 0 0;
     -ms-transform: rotate(360deg);
     -webkit-transform: rotate(360deg);
     transform: rotate(360deg);

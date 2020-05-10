@@ -9,6 +9,10 @@
     transition: transform 0.3s ease-in-out;
 }
 
+::ng-deep .ngx-mat-floating-component-container > * {
+    margin: 0px !important;
+}
+
 .ngx-mat-floating-component-wrapper-generic {
     border: 1px solid black;
 }

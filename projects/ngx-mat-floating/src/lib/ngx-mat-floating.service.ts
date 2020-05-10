@@ -1,4 +1,5 @@
-import {ApplicationRef, Injectable, Injector, ViewContainerRef} from "@angular/core";
+import {ApplicationRef, ElementRef, Injectable, Injector, ViewContainerRef} from "@angular/core";
+import {NgxMatFloatingDirectiveInterface} from "./directive/ngx-mat-floating.directive.interface";
 
 export let NgxMatFloatingInjector: Injector;
 export let NgxMatFloatingApplicationRef: ApplicationRef;
@@ -14,6 +15,32 @@ export class NgxMatFloatingService {
     constructor(private injector: Injector, public applicationRef: ApplicationRef) {
         NgxMatFloatingApplicationRef = applicationRef;
         NgxMatFloatingInjector = injector;
+    }
+
+    static getFloatingDirective(floatingElement: HTMLElement | ElementRef | NgxMatFloatingDirectiveInterface): NgxMatFloatingDirectiveInterface {
+        let floatingDirective: NgxMatFloatingDirectiveInterface;
+
+        if ((<NgxMatFloatingDirectiveInterface>floatingElement).pinButtons) {
+            floatingDirective = floatingElement as NgxMatFloatingDirectiveInterface;
+        } else if (floatingElement) {
+            if ((<any>floatingElement).nativeElement) {
+                (<any>floatingElement) = (<any>floatingElement).nativeElement;
+            }
+
+            if ((<any>floatingElement).__ngxMatFloatingDirective) {
+                floatingDirective = (<any>floatingElement).__ngxMatFloatingDirective;
+            } else if ((<any>floatingElement)._viewContainerRef) {
+                if ((<any>floatingElement)._viewContainerRef.element) {
+                    if ((<any>floatingElement)._viewContainerRef.element.__ngxMatFloatingDirective) {
+                        floatingDirective = (<any>floatingElement)._viewContainerRef.element.__ngxMatFloatingDirective;
+                    } else if ((<any>floatingElement)._viewContainerRef.element.nativeElement && (<any>floatingElement)._viewContainerRef.element.nativeElement.__ngxMatFloatingDirective) {
+                        floatingDirective = (<any>floatingElement)._viewContainerRef.element.nativeElement.__ngxMatFloatingDirective;
+                    }
+                }
+            }
+        }
+
+        return floatingDirective.pinButtons ? floatingDirective : null;
     }
 
     public setRootViewContainerRef(rootViewContainerRef: ViewContainerRef) {
@@ -34,4 +61,5 @@ export class NgxMatFloatingService {
 
         return !!value;
     }
+
 }

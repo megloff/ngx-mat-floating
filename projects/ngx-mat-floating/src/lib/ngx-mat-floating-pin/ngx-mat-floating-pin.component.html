@@ -5,7 +5,7 @@
         <div *ngIf="!buttonUrl.pinnedIcon && !buttonHtml.pinnedIcon" style="display: inline">
             <svg xmlns="http://www.w3.org/2000/svg" class="ngx-mat-floating-pin-button-icon"
                  aria-hidden="true" focusable="false" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 20 20">
-                <path style="pointer-events: none" d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" [attr.fill]="options.color || 'black'"/>
+                <path style="pointer-events: none" d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" [attr.fill]="pinColor"/>
             </svg>
         </div>
     </div>
@@ -16,7 +16,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="ngx-mat-floating-pin-button-icon"
                  aria-hidden="true" focusable="false" width="1em" height="1em" preserveAspectRatio="xMidYMid meet"
                  viewBox="0 0 20 20">
-                <path style="pointer-events: none" d="M2 5.27L3.28 4L20 20.72L18.73 22l-5.93-5.93V22h-1.6v-6H6v-2l2-2v-.73l-6-6M16 12l2 2v2h-.18L8 6.18V4H7V2h10v2h-1v8z" [attr.fill]="options.color || 'black'"/>
+                <path style="pointer-events: none" d="M2 5.27L3.28 4L20 20.72L18.73 22l-5.93-5.93V22h-1.6v-6H6v-2l2-2v-.73l-6-6M16 12l2 2v2h-.18L8 6.18V4H7V2h10v2h-1v8z" [attr.fill]="pinColor"/>
             </svg>
         </div>
     </div>

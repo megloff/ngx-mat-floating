@@ -160,18 +160,35 @@
     </div>
     <div class="content">
         <h1>Angular Material Elements</h1>
-        <mat-expansion-panel #MatExpansionPanelExample ngxMatFloating style="width: 100%">
-            <mat-expansion-panel-header ngxMatFloatingTitle>
-                <mat-panel-title><span translate>Interaction Example</span></mat-panel-title>
+        <mat-expansion-panel ngxMatFloating style="width: 100%; margin-bottom: 12px;">
+            <mat-expansion-panel-header>
+                <mat-panel-title><span translate>mat-expansion-panel</span></mat-panel-title>
                 <mat-panel-description>
-                    <div translate style="width: 100%; text-align: right;">mat-expansion-panel</div>
+                    <div translate style="width: 100%; text-align: right;">Basic Example</div>
+                </mat-panel-description>
+            </mat-expansion-panel-header>
+            <div>
+                <div class="row">
+                    <div class="col">
+                        Hello, Basic World!
+                    </div>
+                </div>
+            </div>
+        </mat-expansion-panel>
+        <mat-expansion-panel ngxMatFloating #MatExpansionPanelExample
+                             (reattach)="onReattach($event)"
+                             style="width: 100%; margin-top: 12px;">
+            <mat-expansion-panel-header ngxMatFloatingTitle>
+                <mat-panel-title><span translate>mat-expansion-panel</span></mat-panel-title>
+                <mat-panel-description>
+                    <div translate style="width: 100%; text-align: right;">Extended Example</div>
                     <ngxMatFloatingPin [forFloatingElement]="MatExpansionPanelExample"></ngxMatFloatingPin>
                 </mat-panel-description>
             </mat-expansion-panel-header>
             <div ngxMatFloatingContent>
                 <div class="row">
                     <div class="col">
-                        Hello, Material World!
+                        Hello, Extended World!
                     </div>
                 </div>
             </div>

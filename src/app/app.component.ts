@@ -59,6 +59,9 @@ export class AppComponent extends NgxMatFloatingAppComponent implements AfterVie
         this.testButtonHasListener = false;
     }
 
+    public onReattach(ev) {
+        console.log("reattach", ev);
+    }
     ngAfterViewInit(): void {
 
     }

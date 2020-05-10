@@ -1,10 +1,9 @@
-import {AfterViewInit, Component, ElementRef, Input, OnInit, ViewChild} from "@angular/core";
-import {NgxMatFloatingDirective} from "../directive/ngx-mat-floating.directive";
-import {NgxMatFloatingService} from "../ngx-mat-floating.service";
+import {AfterViewInit, ChangeDetectorRef, Component, ComponentFactoryResolver, ComponentRef, ElementRef, Input, OnDestroy, OnInit, ViewChild} from "@angular/core";
+import {NgxMatFloatingDirectiveInterface} from "../directive/ngx-mat-floating.directive.interface";
+import {NgxMatFloatingInjector, NgxMatFloatingService} from "../ngx-mat-floating.service";
 import {Buffer} from "buffer";
 import {DomSanitizer, SafeResourceUrl} from "@angular/platform-browser";
 import {NgxMatFloatingPinComponentInterface} from "./ngx-mat-floating-pin.component.interface";
-import {MatExpansionPanel} from "@angular/material/expansion";
 
 export interface NgxMatFloatingPinOptions {
     iconType?: "svg" | "html" | "uri" | "url";
@@ -18,9 +17,11 @@ export interface NgxMatFloatingPinOptions {
     templateUrl: "./ngx-mat-floating-pin.component.html",
     styleUrls: ["./ngx-mat-floating-pin.component.css"]
 })
-export class NgxMatFloatingPinComponent implements NgxMatFloatingPinComponentInterface, OnInit, AfterViewInit {
+export class NgxMatFloatingPinComponent implements NgxMatFloatingPinComponentInterface, OnInit, AfterViewInit, OnDestroy {
     public pinned: boolean = true;
-    public floatingDirective: NgxMatFloatingDirective;
+    public floatingDirective: NgxMatFloatingDirectiveInterface;
+
+    public pinColor: string;
 
     /**
      * @hidden
@@ -47,7 +48,7 @@ export class NgxMatFloatingPinComponent implements NgxMatFloatingPinComponentInt
 
     private viewReady: boolean = false;
 
-    constructor(private service: NgxMatFloatingService, private domSanitizer: DomSanitizer) {
+    constructor(private service: NgxMatFloatingService, private domSanitizer: DomSanitizer, private changeDetector: ChangeDetectorRef) {
     }
 
     public getButtonClass(): string {
@@ -107,29 +108,40 @@ export class NgxMatFloatingPinComponent implements NgxMatFloatingPinComponentInt
 
     public pinElement(ev: MouseEvent) {
         this.floatingDirective.pinElement(ev);
+
+        // include manual change detection, because it might be an injected and detached component
+        this.changeDetector.detectChanges();
     }
 
     public unpinElement(ev: MouseEvent) {
         this.floatingDirective.unpinElement(ev);
-    }
 
-    public getFloatingElementInstance(): ElementRef<HTMLElement> | any {
-        return this.floatingElement && this.floatingElement.nativeElement ? this.floatingElement.nativeElement : this.floatingElement;
+        // include manual change detection, because it might be an injected and detached component
+        this.changeDetector.detectChanges();
     }
 
     ngOnInit(): void {
         if (this.floatingElement) {
-            this.floatingDirective = NgxMatFloatingDirective.getFloatingDirective(this.floatingElement);
-            NgxMatFloatingDirective.registerPinButton(this.floatingDirective, this,"option [forFloatingElement] must point to an element marked with <ngxMatFloating>");
+            this.floatingDirective = NgxMatFloatingService.getFloatingDirective(this.floatingElement);
+            this.floatingDirective.registerPinButton(this, "option [forFloatingElement] must point to an element marked with <ngxMatFloating>");
+        } else if (this.floatingDirective) {
+            this.floatingDirective.registerPinButton(this);
         } else {
             console.error("missing mandatory [forFloatingElement] on <ngxMatFloatingPin>", this.floatingElement);
         }
     }
 
+    ngOnDestroy() {
+        this.floatingDirective.unregisterPinButton(this);
+    }
+
     ngAfterViewInit(): void {
-        if (!this.options) {
-            this.options = {};
-        }
+        this.options = Object.assign({
+            iconType: "svg",
+            color: "#777777"
+        }, this.options || {});
+
+        this.pinColor = this.options.color;
 
         ["pinnedIcon", "unpinnedIcon"].forEach((name) => {
             switch (this.options.iconType) {
@@ -155,5 +167,8 @@ export class NgxMatFloatingPinComponent implements NgxMatFloatingPinComponentInt
         });
 
         this.viewReady = true;
+
+        // include manual change detection, because it might be an injected and detached component
+        this.changeDetector.detectChanges();
     }
 }
