@@ -5,6 +5,7 @@ import {AppComponent} from "./app.component";
 import {NgxMatFloatingModule} from "../../projects/ngx-mat-floating/src/lib/ngx-mat-floating.module";
 import {MatExpansionModule} from "@angular/material/expansion";
 import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
+import {MatCardModule} from "@angular/material/card";
 
 @NgModule({
     declarations: [
@@ -14,8 +15,9 @@ import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
         BrowserModule,
         NgxMatFloatingModule,
         MatExpansionModule,
-        BrowserAnimationsModule
-     ],
+        BrowserAnimationsModule,
+        MatCardModule
+    ],
     providers: [],
     bootstrap: [AppComponent]
 })

@@ -17,12 +17,12 @@
 </div>
 
 <div class="page">
-    <div class="content">
+    <div *ngIf="false" class="content">
         <h1>Plain HTML Elements</h1>
         <div class="plain-div-box" style="border: 0">
             <button (click)="attachButton()" [disabled]="testButtonHasListener" title="Attach external button">Attach</button>&nbsp;
             <button (click)="detachButton()" [disabled]="!testButtonHasListener" title="Detach external button">Detach</button>&nbsp;->&nbsp;
-            <button #TestButton [disabled]="!testButtonHasListener">test</button>
+            <button #TestButton [disabled]="!testButtonHasListener">Test</button>
         </div>
         <!-- Resources -->
         <div #ResourcesBox class="plain-div-box" ngxMatFloating>
@@ -160,7 +160,7 @@
     </div>
     <div class="content">
         <h1>Angular Material Elements</h1>
-        <mat-expansion-panel ngxMatFloating style="width: 100%; margin-bottom: 12px;">
+        <mat-expansion-panel ngxMatFloating style="width: 100%; margin-bottom: 12px;" expanded="1">
             <mat-expansion-panel-header>
                 <mat-panel-title><span translate>mat-expansion-panel</span></mat-panel-title>
                 <mat-panel-description>
@@ -193,6 +193,20 @@
                 </div>
             </div>
         </mat-expansion-panel>
+        <mat-card ngxMatFloating style="margin-top: 12px; width: 300px">
+            <mat-card-title>Card Title</mat-card-title>
+            <mat-card-content>
+                Plain card with title
+            </mat-card-content>
+        </mat-card>
+        <mat-card ngxMatFloating #MatCardExample style="margin-top: 12px;">
+            <mat-card-content>
+                <p>Here comes just content...</p>
+                <p>Special button location
+                    <ngxMatFloatingPin [forFloatingElement]="matCardExampleRef"></ngxMatFloatingPin>
+                </p>
+            </mat-card-content>
+        </mat-card>
     </div>
 </div>
 

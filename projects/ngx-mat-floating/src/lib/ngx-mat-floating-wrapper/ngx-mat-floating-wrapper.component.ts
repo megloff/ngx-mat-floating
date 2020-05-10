@@ -1,6 +1,6 @@
 import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, EventEmitter, NgZone, OnDestroy, OnInit, ViewChild} from "@angular/core";
 import {fromEvent, of, Subject} from "rxjs";
-import {map, switchMap, takeUntil} from "rxjs/operators";
+import {filter, first, map, switchMap, takeUntil} from "rxjs/operators";
 import {NgxMatFloatingElementType} from "../ngx-mat-floating.service";
 import {MatExpansionPanel} from "@angular/material/expansion";
 
@@ -27,15 +27,22 @@ export interface NgxMatFloatingActivationAnimation {
 
 export interface NgxMatFloatingContainerOptions {
     floatingElement: HTMLElement;
-    floatingElementInstance: HTMLElement | MatExpansionPanel;
+    floatingElementInstance: HTMLElement | any;
     elementType: NgxMatFloatingElementType;
-    titleElement: HTMLElement;
+    dragHandle: HTMLElement;
     elementClassList?: string;
     firstPosition?: NgxMatFloatingFirstPosition | NgxMatFloatingPoint;
     width?: string | number;
     height?: string | number;
     activationAnimation?: NgxMatFloatingActivationAnimation;
 }
+
+interface NgxMatFloatingParentElementState {
+    expanded?: boolean;
+    position?: NgxMatFloatingPoint;
+    boundingClientRect?: DOMRect;
+}
+
 
 @Component({
     selector: "ngx-mat-floating-component",
@@ -47,9 +54,6 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
     public stateChange: EventEmitter<NgxMatFloatingWrapperStatus> = new EventEmitter();
 
     @ViewChild("floatingContainer") private floatingContainer: ElementRef<HTMLDivElement>;
-    // @ViewChild("floatingWrapper") private floatingWrapper: ElementRef<HTMLDivElement>;
-    // @ViewChild("floatingTitle") private floatingTitle: ElementRef<HTMLDivElement>;
-    // @ViewChild("floatingContent") private floatingContent: ElementRef<HTMLDivElement>;
 
     private pinned: boolean = true;
 
@@ -61,8 +65,6 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
     private placeHolderElement: HTMLElement;
     private zIndex: number;
 
-    private originalBoundingClientRect: DOMRect;
-    private originalPosition: NgxMatFloatingPoint;
     private parentElementMarginOffset: NgxMatFloatingPoint;
     private relativePosition: NgxMatFloatingPoint;
     private parentElementPosition: NgxMatFloatingPoint;
@@ -73,6 +75,8 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
 
     private allowResize: boolean = true;
     private floatingContainerHasMoved: boolean = false;
+
+    private originalState: NgxMatFloatingParentElementState = {};
 
     constructor(private zone: NgZone, private changeDetector: ChangeDetectorRef) {
         this.zIndex = 900 + NgxMatFloatingWrapperComponent.floatingComponents.length;
@@ -105,106 +109,32 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
 
     public changeToUnpinned() {
         if (this.options && this.pinned) {
-            // make sure everything is properly reset
-            this.hideFloatingContainer();
+            this.originalState.boundingClientRect = this.options.floatingElement.getBoundingClientRect();
 
-            this.originalPosition = this.getAbsoluteOffset(this.options.floatingElement);
-            this.originalPosition.x -= parseFloat(this.floatingElementStyles.marginLeft);
-            this.originalPosition.y -= parseFloat(this.floatingElementStyles.marginTop);
+            this.originalState.position = this.getAbsoluteOffset(this.options.floatingElement);
+            this.originalState.position.x -= parseFloat(this.floatingElementStyles.marginLeft);
+            this.originalState.position.y -= parseFloat(this.floatingElementStyles.marginTop);
 
-            this.floatingContainer.nativeElement.classList.remove("ngx-mat-floating-component-hidden");
+            if (this.options.elementType == NgxMatFloatingElementType.MatExpansionPanel) {
+                const matExpansionPanel: MatExpansionPanel = this.options.floatingElementInstance;
+                this.originalState.expanded = matExpansionPanel.expanded;
 
-            this.placeHolderElement = this.createElementPlaceHolder();
-            this.placeHolderElement.classList.add("ngx-mat-floating-placeholder");
-
-            this.floatingElementParent = this.options.floatingElement.parentElement;
-
-            this.floatingElementParent.replaceChild(this.placeHolderElement, this.options.floatingElement);
-
-            this.floatingContainer.nativeElement.appendChild(this.options.floatingElement);
-
-            if (this.options.width) {
-                this.floatingContainer.nativeElement.style.width = typeof this.options.width == "number" ? this.options.width + "px" : this.options.width;
-            } else {
-                this.floatingContainer.nativeElement.style.width = this.originalBoundingClientRect.width + "px";
-            }
-
-            if (this.options.height) {
-                this.floatingContainer.nativeElement.style.height = typeof this.options.height == "number" ? this.options.height + "px" : this.options.height;
-            } else {
-                this.floatingContainer.nativeElement.style.height = this.originalBoundingClientRect.height + "px";
-            }
-
-            let firstPosition: NgxMatFloatingFirstPosition;
-            let firstPositionPoint: NgxMatFloatingPoint;
-
-            if (this.options.firstPosition) {
-                if (this.options.firstPosition.hasOwnProperty("x") && this.options.firstPosition.hasOwnProperty("y")) {
-                    firstPositionPoint = this.options.firstPosition as NgxMatFloatingPoint;
+                if (matExpansionPanel.expanded) {
+                    this.performChangeToUnpinned();
                 } else {
-                    // make sure the passed argument is in correct case
-                    firstPosition = (this.options.firstPosition as NgxMatFloatingFirstPosition).toLowerCase() as NgxMatFloatingFirstPosition;
+                    if (this.hasMoved()) {
+                        this.performChangeToUnpinned();
+                    } else {
+                        matExpansionPanel.afterExpand.pipe(first()).subscribe((_message) => {
+                            this.performChangeToUnpinned();
+                        });
+                    }
+
+                    matExpansionPanel.expanded = true;
                 }
             } else {
-                firstPosition = NgxMatFloatingFirstPosition.Origin;
+                this.performChangeToUnpinned();
             }
-
-            const containerElementStyle = this.floatingContainer.nativeElement.style;
-
-            if (firstPositionPoint) {
-                if (!this.relativePosition) {
-                    this.relativePosition = {
-                        y: firstPositionPoint.y - this.originalPosition.y,
-                        x: firstPositionPoint.x - this.originalPosition.x
-                    };
-                    this.floatingContainerHasMoved = true;
-                }
-            } else {
-                switch (firstPosition) {
-                    case NgxMatFloatingFirstPosition.Centered:
-                        if (!this.relativePosition) {
-                            this.relativePosition = {
-                                y: window.pageYOffset + window.innerHeight / 4 - this.originalPosition.y,
-                                x: (window.innerWidth - this.floatingContainer.nativeElement.clientWidth) / 2 - this.originalPosition.x
-                            };
-                            this.floatingContainerHasMoved = true;
-                        }
-                        containerElementStyle.position = "fixed";
-                        break;
-
-                    case NgxMatFloatingFirstPosition.Origin:
-                        if (!this.relativePosition) {
-                            this.relativePosition = {x: 0, y: 0};
-                        }
-                        containerElementStyle.position = "absolute";
-                        break;
-                }
-            }
-
-            this.parentElementPosition = {
-                x: this.originalPosition.x + parseFloat(this.floatingElementStyles.marginLeft),
-                y: this.originalPosition.y + parseFloat(this.floatingElementStyles.marginTop)
-            };
-
-            containerElementStyle.top = this.parentElementPosition.y + "px";
-            containerElementStyle.left = this.parentElementPosition.x + "px";
-
-            this.floatingContainer.nativeElement.classList.remove("ngx-mat-floating-component-hidden");
-
-            if (this.options.activationAnimation.active && !this.floatingContainerHasMoved) {
-                if (this.options.activationAnimation.active == "all" || firstPosition == NgxMatFloatingFirstPosition.Origin) {
-                    this.floatingContainerAnimation.play();
-                }
-            }
-
-            this.setPosition(this.relativePosition.x, this.relativePosition.y);
-
-            if (this.floatingContainerHasMoved || firstPosition != NgxMatFloatingFirstPosition.Origin) {
-                this.stateChange.next(NgxMatFloatingWrapperStatus.InitialPosition);
-                this.hidePlaceHolderElement();
-            }
-
-            this.pinned = false;
         }
     }
 
@@ -221,18 +151,33 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
 
             this.floatingContainerAnimation.cancel();
 
+            const matExpansionPanel: MatExpansionPanel = this.options.floatingElementInstance;
+            if (this.options.elementType == NgxMatFloatingElementType.MatExpansionPanel && matExpansionPanel.expanded != this.originalState.expanded) {
+                matExpansionPanel.expanded = this.originalState.expanded;
+                matExpansionPanel.afterExpand.pipe(first()).subscribe((_message) => {
+                    this.stateChange.next(NgxMatFloatingWrapperStatus.Pinned);
+                });
+            } else {
+                this.stateChange.next(NgxMatFloatingWrapperStatus.Pinned);
+            }
+
             if (this.hasMoved()) {
                 this.unHidePlaceHolderElement();
+            } else {
+                this.hideFloatingContainer();
             }
 
             this.options.floatingElement.classList.remove("ngx-mat-floating-unpinned");
+
+            const dragHandleElement = this.getDragHandleElement();
+            dragHandleElement.classList.remove("ngx-mat-floating-drag-handle");
 
             this.pinned = true;
         }
     }
 
     public getDragHandleElement(): HTMLElement {
-        return this.options.titleElement;
+        return this.options.dragHandle || this.options.floatingElement;
     }
 
     public hasMoved(): boolean {
@@ -283,11 +228,11 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
     ngAfterViewInit(): void {
         this.floatingContainer.nativeElement.style.zIndex = this.zIndex.toString();
 
+        // reacts to floating container translations
         this.floatingContainer.nativeElement.addEventListener("transitionend", (ev) => {
             if (ev.srcElement == this.floatingContainer.nativeElement) {
                 if (this.pinned) {
                     this.hideFloatingContainer();
-                    this.stateChange.next(NgxMatFloatingWrapperStatus.Pinned);
                 } else {
                     this.stateChange.next(NgxMatFloatingWrapperStatus.Unpinned);
                 }
@@ -304,25 +249,23 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
 
         this.floatingElementStyles = Object.assign({}, window.getComputedStyle(this.options.floatingElement));
 
-        this.originalBoundingClientRect = this.options.floatingElement.getBoundingClientRect();
-
         this.parentElementMarginOffset = {
-            x: parseInt(this.floatingElementStyles.marginLeft, 10),
-            y: parseInt(this.floatingElementStyles.marginTop, 10)
+            x: parseFloat(this.floatingElementStyles.marginLeft),
+            y: parseFloat(this.floatingElementStyles.marginTop)
         };
 
         // ${-parseFloat(this.floatingElementStyles.marginLeft)}px ${-parseFloat(this.floatingElementStyles.marginTop)}px
         let animationKeyframes: Keyframe[] = this.options.activationAnimation.keyframes;
         if (typeof animationKeyframes != "object" || !animationKeyframes.lastIndexOf) {
             animationKeyframes = [{
-                boxShadow: `0 0 5px -5px ${this.options.activationAnimation.color || "sandybrown"}`
+                boxShadow: `0 0 5px -5px ${this.options.activationAnimation.color || "#3F51B5"}`
             }, {
-                boxShadow: `0 0 5px 5px ${this.options.activationAnimation.color || "sandybrown"}`
+                boxShadow: `0 0 5px 5px ${this.options.activationAnimation.color || "#3F51B5"}`
             }];
         }
 
         const animationOptions: KeyframeAnimationOptions = Object.assign({
-            duration: 90,
+            duration: 150,
             iterations: 4,
             direction: "alternate",
             easing: "ease"
@@ -344,16 +287,124 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
         this.stateChange.next(NgxMatFloatingWrapperStatus.Destroyed);
     }
 
-    private adjustParentElementPosition(parentElementPosition: NgxMatFloatingPoint) {
-        const delta = {
-            x: parentElementPosition.x - this.parentElementPosition.x,
-            y: parentElementPosition.y - this.parentElementPosition.y
+    private performChangeToUnpinned() {
+        this.floatingContainer.nativeElement.classList.remove("ngx-mat-floating-component-hidden");
+
+        this.placeHolderElement = this.createElementPlaceHolder();
+        this.placeHolderElement.classList.add("ngx-mat-floating-placeholder");
+
+        this.floatingElementParent = this.options.floatingElement.parentElement;
+
+        this.floatingElementParent.replaceChild(this.placeHolderElement, this.options.floatingElement);
+
+        this.floatingContainer.nativeElement.appendChild(this.options.floatingElement);
+
+        if (this.options.width) {
+            this.floatingContainer.nativeElement.style.width = typeof this.options.width == "number" ? this.options.width + "px" : this.options.width;
+        } else {
+            this.floatingContainer.nativeElement.style.width = this.originalState.boundingClientRect.width + "px";
+        }
+
+        if (this.options.height) {
+            this.floatingContainer.nativeElement.style.height = typeof this.options.height == "number" ? this.options.height + "px" : this.options.height;
+        } else {
+            this.floatingContainer.nativeElement.style.height = this.options.floatingElement.style.height;
+        }
+
+        let firstPosition: NgxMatFloatingFirstPosition;
+        let firstPositionPoint: NgxMatFloatingPoint;
+
+        if (this.options.firstPosition) {
+            if (this.options.firstPosition.hasOwnProperty("x") && this.options.firstPosition.hasOwnProperty("y")) {
+                firstPositionPoint = this.options.firstPosition as NgxMatFloatingPoint;
+            } else {
+                // make sure the passed argument is in correct case
+                firstPosition = (this.options.firstPosition as NgxMatFloatingFirstPosition).toLowerCase() as NgxMatFloatingFirstPosition;
+            }
+        } else {
+            firstPosition = NgxMatFloatingFirstPosition.Origin;
+        }
+
+        const containerElementStyle = this.floatingContainer.nativeElement.style;
+
+        if (firstPositionPoint) {
+            if (!this.relativePosition) {
+                this.relativePosition = {
+                    y: firstPositionPoint.y - this.originalState.position.y,
+                    x: firstPositionPoint.x - this.originalState.position.x
+                };
+                this.floatingContainerHasMoved = true;
+            }
+        } else {
+            switch (firstPosition) {
+                case NgxMatFloatingFirstPosition.Centered:
+                    if (!this.relativePosition) {
+                        this.relativePosition = {
+                            y: window.pageYOffset + window.innerHeight / 4 - this.originalState.position.y,
+                            x: (window.innerWidth - this.floatingContainer.nativeElement.clientWidth) / 2 - this.originalState.position.x
+                        };
+                        this.floatingContainerHasMoved = true;
+                    }
+                    containerElementStyle.position = "fixed";
+                    break;
+
+                case NgxMatFloatingFirstPosition.Origin:
+                    if (!this.relativePosition) {
+                        this.relativePosition = {x: 0, y: 0};
+                    }
+                    containerElementStyle.position = "absolute";
+                    break;
+            }
+        }
+
+        this.parentElementPosition = {
+            x: this.originalState.position.x + parseFloat(this.floatingElementStyles.marginLeft),
+            y: this.originalState.position.y + parseFloat(this.floatingElementStyles.marginTop)
         };
 
-        this.relativePosition.x -= delta.x;
-        this.relativePosition.y -= delta.y;
+        containerElementStyle.top = this.parentElementPosition.y + "px";
+        containerElementStyle.left = this.parentElementPosition.x + "px";
 
-        this.parentElementPosition = parentElementPosition;
+        this.floatingContainer.nativeElement.classList.remove("ngx-mat-floating-component-hidden");
+
+        if (this.options.activationAnimation.active && !this.hasMoved()) {
+            if (this.options.activationAnimation.active == "all" || firstPosition == NgxMatFloatingFirstPosition.Origin) {
+                this.floatingContainerAnimation.play();
+            }
+        }
+
+        this.setPosition(this.relativePosition.x, this.relativePosition.y);
+
+        if (this.hasMoved() || firstPosition != NgxMatFloatingFirstPosition.Origin) {
+            this.stateChange.next(NgxMatFloatingWrapperStatus.InitialPosition);
+            this.hidePlaceHolderElement();
+        }
+
+        if (this.options.elementType == NgxMatFloatingElementType.MatExpansionPanel) {
+            const matExpansionPanel: MatExpansionPanel = this.options.floatingElementInstance;
+            matExpansionPanel.afterExpand.pipe(
+                takeUntil(this.stateChange.pipe(filter((state: NgxMatFloatingWrapperStatus) => {
+                    return state == NgxMatFloatingWrapperStatus.Pinned;
+                })))
+            ).subscribe((expandedStatus) => {
+                this.adjustPlaceHolderHeight();
+                // console.log("expand", expandedStatus, this.originalState);
+            });
+
+            matExpansionPanel.afterCollapse.pipe(
+                takeUntil(this.stateChange.pipe(filter((state: NgxMatFloatingWrapperStatus) => {
+                    return state == NgxMatFloatingWrapperStatus.Pinned;
+                })))
+            ).subscribe((expandedStatus) => {
+                this.adjustPlaceHolderHeight();
+                // console.log("collapse", expandedStatus, this.originalState);
+            });
+        }
+
+        const dragHandleElement = this.getDragHandleElement();
+        dragHandleElement.classList.add("ngx-mat-floating-drag-handle");
+
+        this.pinned = false;
     }
 
     // noinspection JSMethodCanBeStatic
@@ -393,13 +444,12 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
             const dragHandleMouseDownEvent = fromEvent(this.getDragHandleElement(), "mousedown");
             const mouseUpEvent = fromEvent(document, "mouseup");
             const mouseMoveEvent = fromEvent(document, "mousemove");
-            const mouseClickEvent = fromEvent(document, "click");
 
             let hasDragged: boolean = false;
 
             if (this.options.elementType == NgxMatFloatingElementType.MatExpansionPanel) {
                 // prevent expansion panel toggle if the panel has been dragged
-                this.options.titleElement.addEventListener("click", (ev) => {
+                this.getDragHandleElement().addEventListener("click", (ev) => {
                     if (hasDragged) {
                         ev.preventDefault();
                         ev.stopPropagation();
@@ -409,7 +459,7 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
                 });
             }
 
-            containerMouseDownEvent.pipe(takeUntil(this.destroySubject)).subscribe((ev) => {
+            containerMouseDownEvent.pipe(takeUntil(this.destroySubject)).subscribe((_ev) => {
                 for (let target: HTMLElement = (<HTMLElement>event.target); target; target = (<HTMLElement>target).parentElement) {
                     if (target == this.floatingContainer.nativeElement) {
                         hasDragged = false;
@@ -426,7 +476,6 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
                         return mouseMoveEvent;
                     } else {
                         this.stateChange.next(NgxMatFloatingWrapperStatus.DragStart);
-                        this.hidePlaceHolderElement();
 
                         this.floatingContainer.nativeElement.classList.add("ngx-mat-floating-component-dragging");
                         this.bringToFront();
@@ -468,7 +517,11 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
             mouseDragEvent.pipe(takeUntil(this.destroySubject)).subscribe((_ev: MouseEvent) => {
                 if (!this.pinned) {
                     if (this.delta.x !== 0 && this.delta.y !== 0) {
-                        hasDragged = true;
+                        if (!hasDragged) {
+                            this.hidePlaceHolderElement();
+                            hasDragged = true;
+                        }
+
                         this.stateChange.next(NgxMatFloatingWrapperStatus.Dragging);
                         requestAnimationFrame(() => {
                             this.setPosition(this.relativePosition.x + this.delta.x, this.relativePosition.y + this.delta.y);
@@ -477,7 +530,7 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
                 }
             });
 
-            mouseUpEvent.pipe(takeUntil(this.destroySubject)).subscribe((ev: MouseEvent) => {
+            mouseUpEvent.pipe(takeUntil(this.destroySubject)).subscribe((_ev: MouseEvent) => {
                 if (!this.pinned) {
                     this.relativePosition.x += this.delta.x;
                     this.relativePosition.y += this.delta.y;
@@ -512,7 +565,13 @@ export class NgxMatFloatingWrapperComponent implements OnInit, OnDestroy, AfterV
     private unHidePlaceHolderElement() {
         setTimeout(() => {
             this.placeHolderElement.classList.add("ngx-mat-floating-transition");
-            this.placeHolderElement.style.maxHeight = this.placeHolderElement.style.height;
+            this.placeHolderElement.style.maxHeight = this.originalState.boundingClientRect.height + parseFloat(this.floatingElementStyles.marginTop) + parseFloat(this.floatingElementStyles.marginBottom) + "px";
         }, 1);
+    }
+
+    private adjustPlaceHolderHeight() {
+        if (!this.hasMoved()) {
+            this.placeHolderElement.style.maxHeight = this.options.floatingElement.clientHeight + parseFloat(this.floatingElementStyles.marginTop) + parseFloat(this.floatingElementStyles.marginBottom) + "px";
+        }
     }
 }

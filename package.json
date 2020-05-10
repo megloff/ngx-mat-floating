@@ -6,6 +6,7 @@
     "start": "ng serve --port 4203",
     "build": "ng build",
     "buildlib": "ng build ngx-mat-floating",
+    "buildlib-prod": "ng build --prod ngx-mat-floating",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"

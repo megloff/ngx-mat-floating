@@ -121,14 +121,6 @@ export class NgxMatFloatingPinComponent implements NgxMatFloatingPinComponentInt
     }
 
     ngOnInit(): void {
-        if (this.floatingElement) {
-            this.floatingDirective = NgxMatFloatingService.getFloatingDirective(this.floatingElement);
-            this.floatingDirective.registerPinButton(this, "option [forFloatingElement] must point to an element marked with <ngxMatFloating>");
-        } else if (this.floatingDirective) {
-            this.floatingDirective.registerPinButton(this);
-        } else {
-            console.error("missing mandatory [forFloatingElement] on <ngxMatFloatingPin>", this.floatingElement);
-        }
     }
 
     ngOnDestroy() {
@@ -136,6 +128,16 @@ export class NgxMatFloatingPinComponent implements NgxMatFloatingPinComponentInt
     }
 
     ngAfterViewInit(): void {
+        if (this.floatingElement && !this.floatingDirective) {
+            this.floatingDirective = this.service.getFloatingDirective(this.floatingElement);
+        }
+
+        if (this.floatingDirective) {
+            this.floatingDirective.registerPinButton(this, "option [forFloatingElement] must point to an element marked with <ngxMatFloating>");
+        } else {
+            console.error("missing mandatory [forFloatingElement] on <ngxMatFloatingPin>", this.floatingElement);
+        }
+
         this.options = Object.assign({
             iconType: "svg",
             color: "#777777"

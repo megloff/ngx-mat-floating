@@ -13,6 +13,12 @@ export class AppComponent extends NgxMatFloatingAppComponent implements AfterVie
     @ViewChild("TheCommand") theCommand: ElementRef<HTMLElement>;
     @ViewChild("TestButton") testButton: ElementRef<HTMLButtonElement>;
 
+    // the component
+    @ViewChild("MatCardExample") matCardExample;
+
+    // reference to the dom element
+    @ViewChild("MatCardExample", {read: ElementRef, static: true}) matCardExampleRef;
+
     public title = "ngx-mat-floating";
     public testButtonHasListener: boolean;
 
@@ -29,12 +35,12 @@ export class AppComponent extends NgxMatFloatingAppComponent implements AfterVie
     public activationAnimationOptions: NgxMatFloatingActivationAnimation = {
         active: true,
         keyframes: [{
-            boxShadow: "0 0 5px -5px blue"
+            boxShadow: "0 0 5px -5px red"
         }, {
-            boxShadow: "0 0 5px 5px blue"
+            boxShadow: "0 0 5px 5px red"
         }],
         options: {
-            duration: 150,
+            duration: 80,
             iterations: 6,
             direction: "alternate",
             easing: "ease"
@@ -62,6 +68,7 @@ export class AppComponent extends NgxMatFloatingAppComponent implements AfterVie
     public onReattach(ev) {
         console.log("reattach", ev);
     }
+
     ngAfterViewInit(): void {
 
     }

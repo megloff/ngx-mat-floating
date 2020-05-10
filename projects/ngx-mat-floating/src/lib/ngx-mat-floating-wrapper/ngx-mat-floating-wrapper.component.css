@@ -25,7 +25,7 @@
     transition: none;
 }
 
-.ngx-mat-floating-component-container .ngx-mat-floating-component-title {
+::ng-deep .ngx-mat-floating-drag-handle {
     cursor: pointer;
 }
 
