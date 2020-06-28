@@ -1,11 +1,12 @@
 import {ApplicationRef, ElementRef, Injectable, Injector, ViewContainerRef} from "@angular/core";
 import {NgxMatFloatingDirectiveInterface} from "./directive/ngx-mat-floating.directive.interface";
+import {NgxMatFloatingHtmlElement} from "./directive/ngx-mat-floating.directive";
 
 export let NgxMatFloatingInjector: Injector;
 export let NgxMatFloatingApplicationRef: ApplicationRef;
 export let NgxMatFloatingGlobalService: NgxMatFloatingService;
 
-export enum NgxMatFloatingElementType { Generic, MatCard, MatExpansionPanel}
+export enum NgxMatFloatingElementType { Generic, MatCard, MatExpansionPanel, MatDialog}
 
 @Injectable({
     providedIn: "root"
@@ -22,14 +23,15 @@ export class NgxMatFloatingService {
         NgxMatFloatingInjector = injector;
     }
 
-    public getFloatingDirective(floatingElement: HTMLElement | ElementRef | NgxMatFloatingDirectiveInterface): NgxMatFloatingDirectiveInterface {
+    // noinspection OverlyComplexFunctionJS
+    public getFloatingDirective(floatingElement: NgxMatFloatingHtmlElement | ElementRef | NgxMatFloatingDirectiveInterface): NgxMatFloatingDirectiveInterface {
         let floatingDirective: NgxMatFloatingDirectiveInterface;
 
         if ((<NgxMatFloatingDirectiveInterface>floatingElement).pinButtons) {
             floatingDirective = floatingElement as NgxMatFloatingDirectiveInterface;
         } else if (floatingElement) {
-            if ((<any>floatingElement).nativeElement) {
-                (<any>floatingElement) = (<any>floatingElement).nativeElement;
+            if ((<ElementRef>floatingElement).nativeElement) {
+                floatingElement = (<ElementRef>floatingElement).nativeElement;
             }
 
             if ((<any>floatingElement).__ngxMatFloatingDirective) {
@@ -42,13 +44,20 @@ export class NgxMatFloatingService {
                         floatingDirective = (<any>floatingElement)._viewContainerRef.element.nativeElement.__ngxMatFloatingDirective;
                     }
                 }
+            } else {
+                for (let e: NgxMatFloatingHtmlElement = floatingElement as NgxMatFloatingHtmlElement; e; e = e.parentElement as NgxMatFloatingHtmlElement) {
+                    if (e.__ngxMatFloatingDirective) {
+                        floatingDirective = e.__ngxMatFloatingDirective;
+                        break;
+                    }
+                }
             }
         }
 
         return floatingDirective && floatingDirective.pinButtons ? floatingDirective : null;
     }
 
-    // noinspection JSUnusedGlobalSymbols
+    // noinspection JSUnusedGlobalSymbols,FunctionWithMultipleLoopsJS
     public getTagPathId(element: HTMLElement): string {
         let id = "";
 

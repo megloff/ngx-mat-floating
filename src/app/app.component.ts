@@ -1,8 +1,10 @@
 import {AfterViewInit, Component, ElementRef, Injector, ViewChild, ViewContainerRef} from "@angular/core";
-import {NgxMatFloatingAppComponent} from "../../projects/ngx-mat-floating/src/lib/ngx-mat-floating-app-component";
-import {NgxMatFloatingActivationAnimation} from "../../projects/ngx-mat-floating/src/lib/ngx-mat-floating-wrapper/ngx-mat-floating-wrapper.component";
-import {NgxMatFloatingDirective} from "../../projects/ngx-mat-floating/src/lib/directive/ngx-mat-floating.directive";
-import {NgxMatFloatingPinOptions} from "../../projects/ngx-mat-floating/src/lib/ngx-mat-floating-pin/ngx-mat-floating-pin.component";
+import {NgxMatFloatingAppComponent} from "../../projects/ngx-mat-floating/src";
+import {NgxMatFloatingActivationAnimation, NgxMatFloatingPosition} from "../../projects/ngx-mat-floating/src/lib/ngx-mat-floating-wrapper/ngx-mat-floating-wrapper.component";
+import {NgxMatFloatingDirective} from "../../projects/ngx-mat-floating/src";
+import {NgxMatFloatingPinOptions} from "../../projects/ngx-mat-floating/src";
+import {DialogComponent, DialogData, DialogResult} from "./dialog/dialog.component";
+import {MatDialog} from "@angular/material/dialog";
 
 @Component({
     selector: "NgxMatFloatingLibrary-root",
@@ -21,6 +23,8 @@ export class AppComponent extends NgxMatFloatingAppComponent implements AfterVie
 
     public title = "ngx-mat-floating";
     public testButtonHasListener: boolean;
+
+    public closingPosition: NgxMatFloatingPosition;
 
     public theCommandPinOptions: NgxMatFloatingPinOptions = {
         color: "white",
@@ -47,12 +51,27 @@ export class AppComponent extends NgxMatFloatingAppComponent implements AfterVie
         }
     };
 
-    constructor() {
+    constructor(private dialog: MatDialog) {
         super();
     }
 
+    public showFloatingDialog() {
+        this.closingPosition = null;
+
+        const dialogRef = this.dialog.open(DialogComponent, {
+            width: "250px",
+            data: <DialogData>{
+                message: "I am the most wonderful floating dialog!"
+            }
+        });
+
+        dialogRef.afterClosed().subscribe((result: DialogResult) => {
+            this.closingPosition = result && result.position;
+        });
+    }
+
     public stateChangeLogger(ev) {
-        console.log(ev);
+        // console.log(ev);
     }
 
     public attachButton() {
@@ -66,7 +85,7 @@ export class AppComponent extends NgxMatFloatingAppComponent implements AfterVie
     }
 
     public onReattach(ev) {
-        console.log("reattach", ev);
+        // console.log("reattach", ev);
     }
 
     ngAfterViewInit(): void {

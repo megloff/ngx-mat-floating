@@ -1,11 +1,11 @@
-import {AfterViewInit, ChangeDetectorRef, ComponentFactoryResolver, ComponentRef, Directive, ElementRef, EventEmitter, Injector, Input, OnInit, Output, ViewContainerRef} from "@angular/core";
+import {AfterViewInit, ComponentFactoryResolver, ComponentRef, Directive, ElementRef, EventEmitter, Injector, Input, OnDestroy, OnInit, Output, ViewContainerRef} from "@angular/core";
 
 import {MatExpansionPanel} from "@angular/material/expansion";
 
 import {
     NgxMatFloatingActivationAnimation,
     NgxMatFloatingFirstPosition,
-    NgxMatFloatingPoint,
+    NgxMatFloatingPosition,
     NgxMatFloatingWrapperComponent,
     NgxMatFloatingWrapperStatus
 } from "../ngx-mat-floating-wrapper/ngx-mat-floating-wrapper.component";
@@ -15,23 +15,28 @@ import {NgxMatFloatingPinComponentInterface} from "../ngx-mat-floating-pin/ngx-m
 import {NgxMatFloatingPinComponent} from "../ngx-mat-floating-pin/ngx-mat-floating-pin.component";
 import {NgxMatFloatingDirectiveInterface} from "./ngx-mat-floating.directive.interface";
 import {MatCard} from "@angular/material/card";
+import {filter, finalize, first, take, takeUntil} from "rxjs/operators";
 
 export interface NxgMatFloatingStatusChangeEvent {
     type: NgxMatFloatingWrapperStatus;
     component: NgxMatFloatingDirective;
-    position: NgxMatFloatingPoint;
+    position: NgxMatFloatingPosition;
 }
 
 export interface NxgMatFloatingAttachmentEvent {
     type: "attach" | "detach";
     component: NgxMatFloatingDirective;
-    position: NgxMatFloatingPoint;
+    position: NgxMatFloatingPosition;
+}
+
+export interface NgxMatFloatingHtmlElement extends HTMLElement {
+    __ngxMatFloatingDirective: NgxMatFloatingDirective;
 }
 
 @Directive({
     selector: "[ngxMatFloating],[ngx-mat-floating]"
 })
-export class NgxMatFloatingDirective implements OnInit, AfterViewInit, NgxMatFloatingDirectiveInterface {
+export class NgxMatFloatingDirective implements OnInit, AfterViewInit, OnDestroy, NgxMatFloatingDirectiveInterface {
     public pinButtons: (NgxMatFloatingPinComponentInterface | HTMLButtonElement)[] = [];
 
     @Output("detach") detach: EventEmitter<NxgMatFloatingAttachmentEvent> = new EventEmitter();
@@ -40,39 +45,29 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit, NgxMatFlo
 
     @Input("floatingWidth") private floatingComponentWidth: string;
     @Input("floatingHeight") private floatingComponentHeight: string;
-    @Input("firstPosition") private firstPosition: NgxMatFloatingFirstPosition | NgxMatFloatingPoint = NgxMatFloatingFirstPosition.Origin;
+    @Input("firstPosition") private firstPosition: NgxMatFloatingFirstPosition | NgxMatFloatingPosition = NgxMatFloatingFirstPosition.Origin;
     @Input("wrapperClass") private wrapperClass: string;
     @Input("activationAnimation") private activationAnimation: boolean | string | NgxMatFloatingActivationAnimation = {active: true};
     @Input("rememberPosition") private rememberPosition: boolean = true;
 
-    private floatingElement: HTMLElement;
+    private floatingElement: NgxMatFloatingHtmlElement;
 
     private headerTitleElement: HTMLElement;
+
+    private floatingViewComponent: ComponentRef<NgxMatFloatingWrapperComponent>;
     private floatingViewElement: HTMLElement;
     private floatingViewInstance: NgxMatFloatingWrapperComponent;
 
     private pinned: boolean = true;
 
-    private readonly elementType: NgxMatFloatingElementType;
-    private readonly floatingElementInstance: any;
+    private elementType: NgxMatFloatingElementType;
+    private floatingElementInstance: any;
 
     constructor(private el: ElementRef, private viewContainerRef: ViewContainerRef, private injector: Injector,
-                private componentFactoryResolver: ComponentFactoryResolver, private service: NgxMatFloatingService,
-                private changeDetector: ChangeDetectorRef) {
-        try {
-            this.floatingElementInstance = this.injector.get(MatExpansionPanel);
-            this.elementType = NgxMatFloatingElementType.MatExpansionPanel;
-        } catch {
-            try {
-                this.floatingElementInstance = this.injector.get(MatCard);
-                this.elementType = NgxMatFloatingElementType.MatCard;
-            } catch {
-                this.elementType = NgxMatFloatingElementType.Generic;
-            }
-        }
+                private componentFactoryResolver: ComponentFactoryResolver, private service: NgxMatFloatingService) {
     }
 
-    static registerPinButton(floatingDirective: HTMLElement | ElementRef | NgxMatFloatingDirectiveInterface, pinButton: NgxMatFloatingPinComponentInterface | HTMLButtonElement, errorText?: string) {
+    static registerPinButton(floatingDirective: NgxMatFloatingHtmlElement | ElementRef | NgxMatFloatingDirectiveInterface, pinButton: NgxMatFloatingPinComponentInterface | HTMLButtonElement, errorText?: string) {
         const fd = NgxMatFloatingGlobalService.getFloatingDirective(floatingDirective);
 
         if (fd) {
@@ -86,7 +81,7 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit, NgxMatFlo
         }
     }
 
-    static unregisterPinButton(floatingDirective: HTMLElement | ElementRef | NgxMatFloatingDirectiveInterface, pinButton: NgxMatFloatingPinComponentInterface | HTMLButtonElement) {
+    static unregisterPinButton(floatingDirective: NgxMatFloatingHtmlElement | ElementRef | NgxMatFloatingDirectiveInterface, pinButton: NgxMatFloatingPinComponentInterface | HTMLButtonElement) {
         const fd = NgxMatFloatingGlobalService.getFloatingDirective(floatingDirective);
 
         if (fd) {
@@ -135,13 +130,25 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit, NgxMatFlo
             ev.stopPropagation();
         }
 
+        this.insertFloatingViewComponent();
+
         this.pinButtons.forEach((button: NgxMatFloatingPinComponentInterface) => {
             if (button.setLocalPinnedFlag) {
                 button.setLocalPinnedFlag(false);
             }
         });
 
-        this.pinned = false;
+        this.floatingViewInstance.wrapperStateChange.pipe(
+            finalize(() => {
+                // console.log("unpin wait complete");
+            }),
+            filter((status: NgxMatFloatingWrapperStatus) => {
+                return status == NgxMatFloatingWrapperStatus.Pinned;
+            }),
+            take(1)
+        ).subscribe(() => {
+            this.detachFloatingViewComponent();
+        });
 
         this.floatingViewInstance.changeToUnpinned();
     }
@@ -178,9 +185,34 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit, NgxMatFlo
      * @internal
      */
     ngOnInit() {
-        (<any>this.el.nativeElement).__ngxMatFloatingDirective = this;
+        let e: NgxMatFloatingHtmlElement;
+        for (e = this.el.nativeElement; e; e = e.parentElement as NgxMatFloatingHtmlElement) {
+            if (e.classList.contains("mat-dialog-container")) {
+                break;
+            }
+        }
 
-        this.floatingElement = this.el.nativeElement;
+        if (e) {
+            this.floatingElement = e;
+            this.elementType = NgxMatFloatingElementType.MatDialog;
+        } else {
+            this.floatingElement = this.el.nativeElement;
+
+            try {
+                this.floatingElementInstance = this.injector.get(MatExpansionPanel);
+                this.elementType = NgxMatFloatingElementType.MatExpansionPanel;
+            } catch {
+                try {
+                    this.floatingElementInstance = this.injector.get(MatCard);
+                    this.elementType = NgxMatFloatingElementType.MatCard;
+                } catch {
+                    this.elementType = NgxMatFloatingElementType.Generic;
+                }
+            }
+        }
+
+        this.floatingElement.__ngxMatFloatingDirective = this;
+
         this.headerTitleElement = this.floatingElement.querySelector("[ngxMatFloatingTitle]");
 
         if (!this.headerTitleElement) {
@@ -188,140 +220,159 @@ export class NgxMatFloatingDirective implements OnInit, AfterViewInit, NgxMatFlo
                 this.headerTitleElement = this.floatingElement.querySelector(".mat-expansion-panel-header");
             } else if (this.elementType == NgxMatFloatingElementType.MatCard) {
                 this.headerTitleElement = this.floatingElement.querySelector(".mat-card-title");
+            } else if (this.elementType == NgxMatFloatingElementType.MatDialog) {
+                this.headerTitleElement = this.floatingElement.querySelector(".mat-dialog-title");
             }
         }
     }
 
-    /**
-     * @hidden
-     * @exclude
-     * @ignore
-     * @internal
-     */
     ngAfterViewInit() {
-        // 30 ms of polling is enough, because once NgxMatFloatingAppServices is available, it should initialize the
-        // root view container reference within the next 10ms.
-        this.insertFloatingWrapper(30);
+        if (this.pinButtons.length === 0) {
+            if (this.headerTitleElement) {
+                if (this.elementType == NgxMatFloatingElementType.MatExpansionPanel) {
+                    const titleElement: HTMLElement = this.headerTitleElement.querySelector(".mat-expansion-panel-header-title");
+                    let descriptionElement: HTMLElement = this.headerTitleElement.querySelector(".mat-expansion-panel-header-description");
+                    if (!descriptionElement) {
+                        if (titleElement) {
+                            descriptionElement = document.createElement("MAT-PANEL-DESCRIPTION");
+                            descriptionElement.classList.add("mat-expansion-panel-header-description");
+                            titleElement.parentElement.appendChild(descriptionElement);
+                        }
+                    }
+
+                    if (descriptionElement) {
+                        const pinComponentRef = this.getPinButtonComponent();
+                        descriptionElement.appendChild(pinComponentRef.location.nativeElement);
+                    }
+                } else if (this.elementType == NgxMatFloatingElementType.MatCard) {
+                    const pinComponentRef = this.getPinButtonComponent();
+                    (<HTMLElement>pinComponentRef.location.nativeElement).style.float = "right";
+
+                    this.headerTitleElement.appendChild(pinComponentRef.location.nativeElement);
+                }
+            }
+        }
+
+        if (this.elementType == NgxMatFloatingElementType.MatDialog) {
+            document.body.classList.add("ngx-mat-floating-dialog");
+            this.unpinElement();
+        }
     }
 
-    private insertFloatingWrapper(pollingTimeout: number) {
-        const pollRetryTime = 10; // retry every 10ms
+    ngOnDestroy() {
+        if (this.elementType == NgxMatFloatingElementType.MatDialog) {
+            document.body.classList.remove("ngx-mat-floating-dialog");
+        }
 
-        // the root view might not be present yet when we're initializing -> try again a few ticks later
+        if (this.floatingViewComponent) {
+            this.floatingViewComponent.hostView.destroy();
+            this.floatingViewComponent = null;
+
+            this.detach.complete();
+            this.reattach.complete();
+            this.stateChange.complete();
+        }
+    }
+
+    private insertFloatingViewComponent() {
         const rootContainerViewRef = this.service.getRootViewContainerRef();
         if (rootContainerViewRef) {
-            const factory = this.componentFactoryResolver.resolveComponentFactory(NgxMatFloatingWrapperComponent);
-            const component = factory.create(rootContainerViewRef.parentInjector);
+            if (this.floatingViewComponent) {
+                rootContainerViewRef.insert(this.floatingViewComponent.hostView);
+            } else {
+                // the root view might not be present yet when we're initializing -> try again a few ticks later
+                const factory = this.componentFactoryResolver.resolveComponentFactory(NgxMatFloatingWrapperComponent);
+                this.floatingViewComponent = factory.create(rootContainerViewRef.parentInjector);
 
-            this.floatingViewElement = component.location.nativeElement;
-            this.floatingViewInstance = component.instance;
+                this.floatingViewElement = this.floatingViewComponent.location.nativeElement;
+                this.floatingViewInstance = this.floatingViewComponent.instance;
 
-//            this.floatingViewElement.style.display = this.floatingElement.parentElement.style.display;
+                rootContainerViewRef.insert(this.floatingViewComponent.hostView);
 
-            rootContainerViewRef.insert(component.hostView);
+                let activationAnimation: NgxMatFloatingActivationAnimation;
+                if (this.activationAnimation) {
+                    if (this.activationAnimation == "all") {
+                        activationAnimation = {
+                            active: "all"
+                        };
+                    } else if (typeof this.activationAnimation != "object") {
+                        activationAnimation = {
+                            active: this.service.getBooleanValue(this.activationAnimation as (string | number | boolean), true)
+                        };
+                    } else {
+                        this.activationAnimation = Object.assign({
+                            active: true
+                        }, this.activationAnimation);
 
-            let activationAnimation: NgxMatFloatingActivationAnimation;
-            if (this.activationAnimation) {
-                if (this.activationAnimation == "all") {
-                    activationAnimation = {
-                        active: "all"
-                    };
-                } else if (typeof this.activationAnimation != "object") {
-                    activationAnimation = {
-                        active: this.service.getBooleanValue(this.activationAnimation as (string | number | boolean), true)
-                    };
-                } else {
-                    this.activationAnimation = Object.assign({
-                        active: true
-                    }, this.activationAnimation);
-
-                    activationAnimation = this.activationAnimation as NgxMatFloatingActivationAnimation;
-                }
-            }
-
-            if (this.pinButtons.length === 0) {
-                if (this.headerTitleElement) {
-                    if (this.elementType == NgxMatFloatingElementType.MatExpansionPanel) {
-                        const titleElement: HTMLElement = this.headerTitleElement.querySelector(".mat-expansion-panel-header-title");
-                        let descriptionElement: HTMLElement = this.headerTitleElement.querySelector(".mat-expansion-panel-header-description");
-                        if (!descriptionElement) {
-                            if (titleElement) {
-                                descriptionElement = document.createElement("MAT-PANEL-DESCRIPTION");
-                                descriptionElement.classList.add("mat-expansion-panel-header-description");
-                                titleElement.parentElement.appendChild(descriptionElement);
-                            }
-                        }
-
-                        if (descriptionElement) {
-                            const pinComponentRef = this.getPinButtonComonent();
-                            descriptionElement.appendChild(pinComponentRef.location.nativeElement);
-                        }
-                    } else if (this.elementType == NgxMatFloatingElementType.MatCard) {
-                        const pinComponentRef = this.getPinButtonComonent();
-                        (<HTMLElement>pinComponentRef.location.nativeElement).style.float = "right";
-
-                        this.headerTitleElement.appendChild(pinComponentRef.location.nativeElement);
+                        activationAnimation = this.activationAnimation as NgxMatFloatingActivationAnimation;
                     }
                 }
-            }
 
-            this.floatingViewInstance.setOptions({
-                floatingElement: this.floatingElement,
-                floatingElementInstance: this.floatingElementInstance,
-                elementType: this.elementType,
-                dragHandle: this.headerTitleElement,
-                elementClassList: this.floatingElement.classList.toString().replace(/(mat-focus-indicator\s*|ng-trigger-\S+\s*)/g, ""),
-                width: this.floatingComponentWidth,
-                height: this.floatingComponentHeight,
-                firstPosition: this.firstPosition,
-                activationAnimation: activationAnimation
-            });
-
-            this.floatingViewInstance.stateChange.subscribe((status: NgxMatFloatingWrapperStatus) => {
-                switch (status) {
-                    case NgxMatFloatingWrapperStatus.Ready:
-                        if (this.wrapperClass) {
-                            this.floatingViewInstance.setWrapperClass(this.wrapperClass);
-                        }
-                        break;
-
-                    case NgxMatFloatingWrapperStatus.Pinned:
-                        this.reattach.emit({
-                            type: "attach",
-                            component: this,
-                            position: this.floatingViewInstance.getPosition()
-                        });
-                        console.log("attach");
-                        break;
-
-                    case NgxMatFloatingWrapperStatus.Unpinned:
-                        console.log("detach");
-                        this.detach.emit({
-                            type: "detach",
-                            component: this,
-                            position: this.floatingViewInstance.getPosition()
-                        });
-                        break;
-                }
-
-                this.stateChange.emit({
-                    type: status,
-                    component: this,
-                    position: this.floatingViewInstance.getPosition()
+                this.floatingViewInstance.setOptions({
+                    floatingElement: this.floatingElement,
+                    floatingElementInstance: this.floatingElementInstance,
+                    elementType: this.elementType,
+                    dragHandle: this.headerTitleElement,
+                    elementClassList: this.floatingElement.classList.toString().replace(/(mat-focus-indicator\s*|ng-trigger-\S+\s*)/g, ""),
+                    width: this.floatingComponentWidth,
+                    height: this.floatingComponentHeight,
+                    firstPosition: this.firstPosition,
+                    activationAnimation: activationAnimation
                 });
-            });
-        } else {
-            if (pollingTimeout > 0) {
-                setTimeout(() => {
-                    this.insertFloatingWrapper(pollingTimeout - pollRetryTime);
-                }, pollRetryTime);
-            } else {
-                console.error("To use an element with ngxMatFloating, your application component must inherit from NgxMatFloatingAppComponent!");
+
+                this.floatingViewInstance.wrapperStateChange.pipe(
+                    finalize(() => {
+                        // console.log("view gone");
+                    }),
+                    takeUntil(this.stateChange.pipe(filter((event: NxgMatFloatingStatusChangeEvent) => {
+                        return event.type == NgxMatFloatingWrapperStatus.Destroyed;
+                    })))
+                ).subscribe((status: NgxMatFloatingWrapperStatus) => {
+                    switch (status) {
+                        case NgxMatFloatingWrapperStatus.Ready:
+                            if (this.wrapperClass) {
+                                this.floatingViewInstance.setWrapperClass(this.wrapperClass);
+                            }
+                            break;
+
+                        case NgxMatFloatingWrapperStatus.Pinned:
+                            this.reattach.emit({
+                                type: "attach",
+                                component: this,
+                                position: this.floatingViewInstance.getPosition()
+                            });
+                            break;
+
+                        case NgxMatFloatingWrapperStatus.Unpinned:
+                            this.detach.emit({
+                                type: "detach",
+                                component: this,
+                                position: this.floatingViewInstance.getPosition()
+                            });
+                            break;
+                    }
+
+                    this.stateChange.emit({
+                        type: status,
+                        component: this,
+                        position: this.floatingViewInstance.getPosition()
+                    });
+                });
+
+                this.floatingViewComponent.changeDetectorRef.detectChanges();
             }
+        } else {
+            console.error("To use an element with ngxMatFloating, your application component must inherit from NgxMatFloatingAppComponent!");
         }
     }
 
-    private getPinButtonComonent(): ComponentRef<NgxMatFloatingPinComponent> {
+    private detachFloatingViewComponent() {
+        const rootContainerViewRef = this.service.getRootViewContainerRef();
+        const floatingViewComponentIndex = rootContainerViewRef.indexOf(this.floatingViewComponent.hostView);
+        rootContainerViewRef.detach(floatingViewComponentIndex);
+    }
+
+    private getPinButtonComponent(): ComponentRef<NgxMatFloatingPinComponent> {
         const componentFactoryResolver = NgxMatFloatingInjector.get(ComponentFactoryResolver);
 
         let pinComponentRef: ComponentRef<NgxMatFloatingPinComponent>;

@@ -1,12 +1,35 @@
 {
   "name": "ngx-mat-floating",
   "version": "0.0.1",
+  "description": "This Angular Material extension allows common Material components like MatExtensionPanel, MatCard and MatDialog to become floating and draggable.",
+  "scripts": {
+    "typedoc": "rm -rf docs && typedoc src/lib"
+  },
+  "author": "Marcel Egloff",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/megloff/ngx-mat-floating.git"
+  },
+  "bugs": {
+    "type": "git",
+    "url": "https://github.com/megloff/ngx-mat-floating/issues"
+  },
+  "homepage": "https://github.com/megloff/ngx-mat-floating",
+  "keywords": [
+    "angular",
+    "material",
+    "draggable",
+    "floating",
+    "component",
+    "extension"
+  ],
+  "module": "",
+  "license": "MIT",
   "peerDependencies": {
     "@angular/common": "^9.0.0",
     "@angular/core": "^9.0.0",
     "@angular/material": "^9.0.0",
-    "@angular/cdk": "@9.0.0",
-    "buffer": "^5.0.0",
+    "@angular/cdk": "^9.0.0",
     "tslib": "^1.10.0"
   },
   "dependencies": {}

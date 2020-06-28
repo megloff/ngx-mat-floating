@@ -21,8 +21,6 @@ export class NgxMatFloatingPinComponent implements NgxMatFloatingPinComponentInt
     public pinned: boolean = true;
     public floatingDirective: NgxMatFloatingDirectiveInterface;
 
-    public pinColor: string;
-
     /**
      * @hidden
      * @ignore
@@ -48,7 +46,7 @@ export class NgxMatFloatingPinComponent implements NgxMatFloatingPinComponentInt
 
     private viewReady: boolean = false;
 
-    constructor(private service: NgxMatFloatingService, private domSanitizer: DomSanitizer, private changeDetector: ChangeDetectorRef) {
+    constructor(private elementRef: ElementRef, private service: NgxMatFloatingService, private domSanitizer: DomSanitizer, private changeDetector: ChangeDetectorRef) {
     }
 
     public getButtonClass(): string {
@@ -67,7 +65,7 @@ export class NgxMatFloatingPinComponent implements NgxMatFloatingPinComponentInt
     }
 
     public isInitialized(): boolean {
-        return this.viewReady && !!this.service.getRootViewContainerRef();
+        return this.viewReady;
     }
 
     public onClick(ev: MouseEvent) {
@@ -80,10 +78,12 @@ export class NgxMatFloatingPinComponent implements NgxMatFloatingPinComponentInt
         }
     }
 
+    // noinspection JSUnusedGlobalSymbols
     public getDataSource(iconName: string): SafeResourceUrl {
         return this.buttonUrl[iconName];
     }
 
+    // noinspection JSUnusedGlobalSymbols
     public isPinned(): boolean {
         return this.pinned;
     }
@@ -128,22 +128,21 @@ export class NgxMatFloatingPinComponent implements NgxMatFloatingPinComponentInt
     }
 
     ngAfterViewInit(): void {
-        if (this.floatingElement && !this.floatingDirective) {
-            this.floatingDirective = this.service.getFloatingDirective(this.floatingElement);
+        const element = this.floatingElement || this.elementRef;
+        if (element && !this.floatingDirective) {
+            this.floatingDirective = this.service.getFloatingDirective(element);
         }
 
         if (this.floatingDirective) {
             this.floatingDirective.registerPinButton(this, "option [forFloatingElement] must point to an element marked with <ngxMatFloating>");
         } else {
-            console.error("missing mandatory [forFloatingElement] on <ngxMatFloatingPin>", this.floatingElement);
+            console.error("either place <ngxMatFloatingPin> inside an element marked with 'ngxMatFloating' or supply [forFloatingElement]", this.elementRef.nativeElement);
         }
 
         this.options = Object.assign({
             iconType: "svg",
             color: "#777777"
         }, this.options || {});
-
-        this.pinColor = this.options.color;
 
         ["pinnedIcon", "unpinnedIcon"].forEach((name) => {
             switch (this.options.iconType) {
