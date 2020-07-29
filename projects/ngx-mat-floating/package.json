@@ -26,11 +26,12 @@
   "module": "",
   "license": "MIT",
   "peerDependencies": {
-    "@angular/common": "^9.0.0",
-    "@angular/core": "^9.0.0",
-    "@angular/material": "^9.0.0",
-    "@angular/cdk": "^9.0.0",
-    "tslib": "^1.10.0"
-  },
-  "dependencies": {}
+    "@angular/common": "^9.0.0 || ^10.0.0",
+    "@angular/core": "^9.0.0 || ^10.0.0",
+    "@angular/material": "^9.0.0 || ^10.0.0",
+    "@angular/cdk": "^9.0.0 || ^10.0.0"
+},
+  "dependencies": {
+    "tslib": "^1.10.0 || ^2.0.0"
+}
 }

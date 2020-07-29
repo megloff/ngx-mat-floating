@@ -1,7 +1,6 @@
-import {AfterViewInit, ChangeDetectorRef, Component, ComponentFactoryResolver, ComponentRef, ElementRef, Input, OnDestroy, OnInit, ViewChild} from "@angular/core";
+import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, Input, OnDestroy, OnInit, ViewChild} from "@angular/core";
 import {NgxMatFloatingDirectiveInterface} from "../directive/ngx-mat-floating.directive.interface";
-import {NgxMatFloatingInjector, NgxMatFloatingService} from "../ngx-mat-floating.service";
-import {Buffer} from "buffer";
+import { NgxMatFloatingService} from "../ngx-mat-floating.service";
 import {DomSanitizer, SafeResourceUrl} from "@angular/platform-browser";
 import {NgxMatFloatingPinComponentInterface} from "./ngx-mat-floating-pin.component.interface";
 
