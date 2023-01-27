@@ -5,13 +5,12 @@
   "projects": {
     "ngx-mat-floating-demo": {
       "projectType": "application",
-      "schematics": {},
       "root": "",
       "sourceRoot": "src",
       "prefix": "NgxMatFloatingLibrary",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular-devkit/build-angular:ng-packagr",
           "options": {
             "outputPath": "dist/ngx-mat-floating-demo",
             "index": "src/index.html",
@@ -129,7 +128,7 @@
       "prefix": "NgxMatFloating",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-ng-packagr:build",
+          "builder": "@angular-devkit/build-angular:ng-packagr",
           "options": {
             "tsConfig": "projects/ngx-mat-floating/tsconfig.lib.json",
             "project": "projects/ngx-mat-floating/ng-package.json"
@@ -163,5 +162,8 @@
       }
     }
   },
-  "defaultProject": "ngx-mat-floating-demo"
+  "defaultProject": "ngx-mat-floating-demo",
+  "cli": {
+    "analytics": false
+  }
 }
